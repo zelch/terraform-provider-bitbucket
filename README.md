@@ -1,11 +1,15 @@
-<!-- archived-provider -->
-Please note: This Terraform provider is archived, per our [provider archiving process](https://terraform.io/docs/internals/archiving.html). What does this mean?
-1. The code repository and all commit history will still be available.
-1. Existing released binaries will remain available on the releases site.
-1. Issues and pull requests are not being monitored.
-1. New releases will not be published.
+# Maintenance status
 
-If anyone from the community or an interested third party is willing to maintain it, they can fork the repository and [publish it](https://www.terraform.io/docs/registry/providers/publishing.html) to the Terraform Registry. If you are interested in maintaining this provider, please reach out to the [Terraform Provider Development Program](https://www.terraform.io/guides/terraform-provider-development-program.html) at *terraform-provider-dev@hashicorp.com*.
+Unmaintained, maintainers needed! I just took the archived repository, and released it to the Terraform Registry. I'm not a Go developer, so I'll not be able to maintain this repository in the long run. PRs are welcome, and I'll try to merge and release them as frequently as possible.
+
+If you would like Atlassian to take ownership of the provider, you can voice your opinion at [BCLOUD-17209](https://jira.atlassian.com/browse/BCLOUD-17209).
+
+## History
+
+- Initally created during an Atlassian [24h hackathon](https://www.atlassian.com/company/shipit) by @cwood
+- Maintained by HashiCorp and @cwood with contributions from the community
+- [Archived](https://www.terraform.io/docs/internals/archiving.html) by HashiCorp due not being maintained (likely related to not being published to the registry)
+- Forked and published to [Terraform Registry](https://registry.terraform.io) by @aeirola
 
 Terraform Provider
 ==================
