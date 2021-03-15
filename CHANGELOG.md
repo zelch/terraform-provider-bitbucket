@@ -1,4 +1,20 @@
-## 1.2.1 (Unreleased)
+## 1.3.0 (March 15, 2021)
+
+This release contains the changes to upstream repo that were never released.
+
+### Features
+
+* add `bitbucket_deployment` and `bitbucket_deployment_variable` resources [#60](https://github.com/hashicorp/terraform-provider-bitbucket/pull/60)
+* add `require_default_reviewer_approvals_to_merge` branch restriction value [#52](https://github.com/hashicorp/terraform-provider-bitbucket/pull/52)
+
+### Bug fixes
+
+* fix issue with omitempty [#49](https://github.com/hashicorp/terraform-provider-bitbucket/pull/49)
+
+### Documentation
+
+* fix ducmentation typo [#54](https://github.com/hashicorp/terraform-provider-bitbucket/pull/54), [#61](https://github.com/hashicorp/terraform-provider-bitbucket/pull/61) and [#65](https://github.com/hashicorp/terraform-provider-bitbucket/pull/65)
+
 ## 1.2.0 (January 23, 2020)
 * add `bitbucket_project` to create a new project via the API
 * add `bitbucket_repository` turn on/off pipelines
