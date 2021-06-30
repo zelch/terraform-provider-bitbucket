@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/url"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // RepositoryVariable structure for handling key info
