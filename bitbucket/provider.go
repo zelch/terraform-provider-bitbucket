@@ -3,8 +3,8 @@ package bitbucket
 import (
 	"net/http"
 
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 // Provider will create the necessary terraform provider to talk to the Bitbucket APIs you should
