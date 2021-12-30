@@ -299,7 +299,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 			repoSlug))
 
 		// pipelines_config returns 404 if they've never been enabled for the project
-		if err != nil && pipelinesConfigReq.StatusCode != 404{
+		if err != nil && pipelinesConfigReq.StatusCode != 404 {
 			return err
 		}
 
