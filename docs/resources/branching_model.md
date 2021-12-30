@@ -89,5 +89,5 @@ The following arguments are supported:
 Branching Models can be imported using the owner and repo seperated by a (`/`), e.g.,
 
 ```sh
-$ terraform import bitbucket_repository.example owner/repo
+terraform import bitbucket_repository.example owner/repo
 ```
