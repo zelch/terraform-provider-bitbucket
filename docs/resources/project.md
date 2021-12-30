@@ -30,4 +30,12 @@ The following arguments are supported:
 * `name` - (Required) The name of the project
 * `key` - (Required) The key used for this project
 * `description` - (Optional) The description of the project
-* `is_private` - (Optional) If you want to keep the project private - defaults to `true`.
+* `is_private` - (Optional) If you want to keep the project private - defaults to `true`
+
+## Import
+
+Repositories can be imported using their `owner/key` ID, e.g.
+
+```sh
+terraform import bitbucket_project.my_project my-account/project_key
+```
