@@ -24,7 +24,7 @@ resource "bitbucket_repository" "infrastructure" {
 ```
 
 If you want to create a repository with a CamelCase name, you should provide
-a seperate slug
+a separate slug
 
 ```hcl
 # Manage your repository
