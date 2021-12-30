@@ -11,7 +11,7 @@ description: |-
 
 This resource allows you to configure deployment variables.
 
-# Example Usage
+## Example Usage
 
 ```hcl
 resource "bitbucket_repository" "monorepo" {
@@ -32,7 +32,7 @@ resource "bitbucket_deployment_variable" "country" {
 }
 ```
 
-# Argument Reference
+## Argument Reference
 
 * `deployment` - (Required) The deployment ID you want to assign this variable to.
 * `name` - (Required) The name of the variable
