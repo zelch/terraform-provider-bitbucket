@@ -32,8 +32,8 @@ The following arguments are supported:
 * `owner` - (Required) The owner of this repository. Can be you or any team you
   have write access to.
 * `repository` - (Required) The name of the repository.
-* `kind` - (Required) The type of restriction that is being applied. List of possible stages is [here](https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Bworkspace%7D/%7Brepo_slug%7D/branch-restrictions/%7Bid%7Da).
-* `branch_match_kind` - (Optional) Indicates how the restriction is matched against a branch. The default is `glob`. Valid values: `branching_model`, `glob`
+* `kind` - (Required) The type of restriction that is being applied. Valid values can be found in [docs](https://developer.atlassian.com/cloud/bitbucket/rest/api-group-branch-restrictions/#api-group-branch-restrictions).
+* `branch_match_kind` - (Optional) Indicates how the restriction is matched against a branch. The default is `glob`. Valid values: `branching_model`, `glob`.
 * `branch_type` - (Optional) Apply the restriction to branches of this type. Active when `branch_match_kind` is `branching_model`. The branch type will be calculated using the branching model configured for the repository. Valid values: `feature`, `bugfix`, `release`, `hotfix`, `development`, `production`.
 * `pattern` - (Optional) Apply the restriction to branches that match this pattern. Active when `branch_match_kind` is `glob`. Will be empty when `branch_match_kind` is `branching_model`.
 * `users` - (Optional) A list of users to use.

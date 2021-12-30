@@ -11,7 +11,7 @@ description: |-
 
 This resource allows you to setup pipelines variables to manage your builds with. Once you have enabled pipelines on your repository you can then further setup variables here to use.
 
-# Example Usage
+## Example Usage
 
 ```hcl
 resource "bitbucket_repository" "monorepo" {
@@ -28,7 +28,7 @@ resource "bitbucket_repository_variable" "debug" {
 }
 ```
 
-# Argument Reference
+## Argument Reference
 
 * `key` - (Required) The key of the key value pair
 * `value` - (Required) The value of the key

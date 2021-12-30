@@ -24,7 +24,7 @@ resource "bitbucket_repository" "infrastructure" {
 ```
 
 If you want to create a repository with a CamelCase name, you should provide
-a seperate slug
+a separate slug
 
 ```hcl
 # Manage your repository
@@ -66,6 +66,6 @@ The following arguments are computed. You can access both `clone_ssh` and
 
 Repositories can be imported using their `owner/name` ID, e.g.
 
-```
-$ terraform import bitbucket_repository.my-repo my-account/my-repo
+```sh
+terraform import bitbucket_repository.my-repo my-account/my-repo
 ```

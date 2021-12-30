@@ -11,7 +11,7 @@ description: |-
 
 This resource allows you to setup pipelines deployment environments.
 
-# Example Usage
+## Example Usage
 
 ```hcl
 resource "bitbucket_repository" "monorepo" {
@@ -26,7 +26,7 @@ resource "bitbucket_deployment" "test" {
 }
 ```
 
-# Argument Reference
+## Argument Reference
 
 * `name` - (Required) The name of the deployment environment
 * `stage` - (Required) The stage (Test, Staging, Production)

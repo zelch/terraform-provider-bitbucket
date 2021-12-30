@@ -9,9 +9,9 @@ description: |-
 
 # bitbucket\_project
 
-This resource allows you to manage your projects in your bitbucket team. 
+This resource allows you to manage your projects in your bitbucket team.
 
-# Example Usage
+## Example Usage
 
 ```hcl
 # Manage your repository
@@ -30,4 +30,4 @@ The following arguments are supported:
 * `name` - (Required) The name of the project
 * `key` - (Required) The key used for this project
 * `description` - (Optional) The description of the project
-* `is_private` - (Optional) If you want to keep the project private - defaults to true
+* `is_private` - (Optional) If you want to keep the project private - defaults to `true`.

@@ -86,8 +86,8 @@ The following arguments are supported:
 
 ## Import
 
-Branching Models can be imported using the owner and repo seperated by a (`/`), e.g.,
+Branching Models can be imported using the owner and repo separated by a (`/`), e.g.,
 
 ```sh
-$ terraform import bitbucket_repository.example owner/repo
+terraform import bitbucket_repository.example owner/repo
 ```
