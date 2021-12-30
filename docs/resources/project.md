@@ -9,7 +9,7 @@ description: |-
 
 # bitbucket\_project
 
-This resource allows you to manage your projects in your bitbucket team. 
+This resource allows you to manage your projects in your bitbucket team.
 
 ## Example Usage
 
