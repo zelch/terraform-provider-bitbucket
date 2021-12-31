@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/url"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -28,7 +29,18 @@ func resourceHook() *schema.Resource {
 		Read:   resourceHookRead,
 		Update: resourceHookUpdate,
 		Delete: resourceHookDelete,
-		Exists: resourceHookExists,
+		Importer: &schema.ResourceImporter{
+			State: func(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+				idParts := strings.Split(d.Id(), "/")
+				if len(idParts) != 3 || idParts[0] == "" || idParts[1] == "" || idParts[2] == "" {
+					return nil, fmt.Errorf("unexpected format of ID (%q), expected OWNER/REPO/HOOK-ID", d.Id())
+				}
+				d.SetId(idParts[2])
+				d.Set("owner", idParts[0])
+				d.Set("repository", idParts[1])
+				return []*schema.ResourceData{d}, nil
+			},
+		},
 
 		Schema: map[string]*schema.Schema{
 			"owner": {
@@ -109,13 +121,15 @@ func createHook(d *schema.ResourceData) *Hook {
 		events = append(events, item.(string))
 	}
 
-	return &Hook{
+	hook := &Hook{
 		URL:                  d.Get("url").(string),
 		Description:          d.Get("description").(string),
 		Active:               d.Get("active").(bool),
 		SkipCertVerification: d.Get("skip_cert_verification").(bool),
 		Events:               events,
 	}
+
+	return hook
 }
 
 func resourceHookCreate(d *schema.ResourceData, m interface{}) error {
@@ -159,6 +173,12 @@ func resourceHookRead(d *schema.ResourceData, m interface{}) error {
 		url.PathEscape(d.Id()),
 	))
 
+	if hookReq.StatusCode == 404 {
+		log.Printf("[WARN] Repository Hook (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return err
 	}
@@ -183,14 +203,7 @@ func resourceHookRead(d *schema.ResourceData, m interface{}) error {
 		d.Set("active", hook.Active)
 		d.Set("url", hook.URL)
 		d.Set("skip_cert_verification", hook.SkipCertVerification)
-
-		eventsList := make([]string, 0, len(hook.Events))
-
-		for _, event := range hook.Events {
-			eventsList = append(eventsList, event)
-		}
-
-		d.Set("events", eventsList)
+		d.Set("events", hook.Events)
 	}
 
 	return nil
@@ -215,37 +228,6 @@ func resourceHookUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	return resourceHookRead(d, m)
-}
-
-func resourceHookExists(d *schema.ResourceData, m interface{}) (bool, error) {
-	client := m.(*Client)
-	if _, okay := d.GetOk("uuid"); okay {
-		hookReq, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/hooks/%s",
-			d.Get("owner").(string),
-			d.Get("repository").(string),
-			url.PathEscape(d.Id()),
-		))
-
-		if err != nil {
-			log.Printf("[DEBUG] Req: %+v, Err: %+v", hookReq, err)
-			// If the hook was not found, we get the message "is not a valid hook".
-			// Return nil so we can show that the hook is gone.
-			if hookReq.StatusCode == 404 {
-				return false, nil
-			}
-
-			panic(err)
-		}
-
-		if hookReq.StatusCode != 200 {
-			return false, err
-		}
-
-		return true, nil
-	}
-
-	return false, nil
-
 }
 
 func resourceHookDelete(d *schema.ResourceData, m interface{}) error {

@@ -38,6 +38,12 @@ func TestAccBitbucketHook_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateIdFunc: testAccBitbucketHookImportStateIdFunc(resourceName),
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccBitbucketHookConfigUpdated(testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBitbucketHookExists(resourceName, &hook),
@@ -165,4 +171,14 @@ resource "bitbucket_hook" "test" {
   ]
 }
 `, testUser, rName)
+}
+
+func testAccBitbucketHookImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return "", fmt.Errorf("Not found: %s", resourceName)
+		}
+		return fmt.Sprintf("%s/%s/%s", rs.Primary.Attributes["owner"], rs.Primary.Attributes["repository"], rs.Primary.ID), nil
+	}
 }
