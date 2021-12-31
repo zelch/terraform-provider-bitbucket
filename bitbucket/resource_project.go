@@ -13,13 +13,22 @@ import (
 
 // Project is the project data we need to send to create a project on the bitbucket api
 type Project struct {
-	Key                     string `json:"key,omitempty"`
-	IsPrivate               bool   `json:"is_private,omitempty"`
-	Owner                   string `json:"owner.username,omitempty"`
-	Description             string `json:"description,omitempty"`
-	Name                    string `json:"name,omitempty"`
-	UUID                    string `json:"uuid,omitempty"`
-	HasPubliclyVisibleRepos bool   `json:"has_publicly_visible_repos,omitempty"`
+	Key                     string        `json:"key,omitempty"`
+	IsPrivate               bool          `json:"is_private,omitempty"`
+	Owner                   string        `json:"owner.username,omitempty"`
+	Description             string        `json:"description,omitempty"`
+	Name                    string        `json:"name,omitempty"`
+	UUID                    string        `json:"uuid,omitempty"`
+	HasPubliclyVisibleRepos bool          `json:"has_publicly_visible_repos,omitempty"`
+	ProjectLinks            *ProjectLinks `json:"links,omitempty"`
+}
+
+type ProjectLinks struct {
+	Avatar Link `json:"avatar,omitempty"`
+}
+
+type Link struct {
+	Href string `json:"href,omitempty"`
 }
 
 func resourceProject() *schema.Resource {
@@ -62,6 +71,32 @@ func resourceProject() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"link": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"avatar": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"href": {
+										Type:     schema.TypeString,
+										Optional: true,
+										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+											return strings.HasPrefix(old, "https://bitbucket.org/account/user")
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -72,6 +107,10 @@ func newProjectFromResource(d *schema.ResourceData) *Project {
 		IsPrivate:   d.Get("is_private").(bool),
 		Description: d.Get("description").(string),
 		Key:         d.Get("key").(string),
+	}
+
+	if v, ok := d.GetOk("link"); ok && len(v.([]interface{})) > 0 && v.([]interface{}) != nil {
+		project.ProjectLinks = expandProjectLinks(v.([]interface{}))
 	}
 
 	return project
@@ -193,6 +232,7 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 		d.Set("description", project.Description)
 		d.Set("has_publicly_visible_repos", project.HasPubliclyVisibleRepos)
 		d.Set("uuid", project.UUID)
+		d.Set("link", flattenProjectLinks(project.ProjectLinks))
 	}
 
 	return nil
@@ -213,4 +253,57 @@ func resourceProjectDelete(d *schema.ResourceData, m interface{}) error {
 	))
 
 	return err
+}
+
+func expandProjectLinks(l []interface{}) *ProjectLinks {
+	if len(l) == 0 || l[0] == nil {
+		return nil
+	}
+
+	tfMap, ok := l[0].(map[string]interface{})
+
+	if !ok {
+		return nil
+	}
+
+	rp := &ProjectLinks{}
+
+	if v, ok := tfMap["avatar"].([]interface{}); ok && len(v) > 0 {
+		rp.Avatar = expandProjectLink(v)
+	}
+
+	return rp
+}
+
+func expandProjectLink(l []interface{}) Link {
+
+	tfMap, _ := l[0].(map[string]interface{})
+
+	rp := Link{}
+
+	if v, ok := tfMap["href"].(string); ok {
+		rp.Href = v
+	}
+
+	return rp
+}
+
+func flattenProjectLinks(rp *ProjectLinks) []interface{} {
+	if rp == nil {
+		return []interface{}{}
+	}
+
+	m := map[string]interface{}{
+		"avatar": flattenProjectLink(rp.Avatar),
+	}
+
+	return []interface{}{m}
+}
+
+func flattenProjectLink(rp Link) []interface{} {
+	m := map[string]interface{}{
+		"href": rp.Href,
+	}
+
+	return []interface{}{m}
 }

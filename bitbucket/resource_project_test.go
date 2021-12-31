@@ -27,12 +27,45 @@ func TestAccBitbucketProject_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBitbucketProjectExists(resourceName, &project),
 					resource.TestCheckResourceAttr(resourceName, "has_publicly_visible_repos", "false"),
-					resource.TestCheckResourceAttr(resourceName, "key", "TESTPROJ"),
+					resource.TestCheckResourceAttr(resourceName, "key", "AAAAAA"),
 					resource.TestCheckResourceAttr(resourceName, "name", rName),
 					resource.TestCheckResourceAttr(resourceName, "owner", testTeam),
 					resource.TestCheckResourceAttr(resourceName, "description", ""),
 					resource.TestCheckResourceAttr(resourceName, "is_private", "true"),
 					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccBitbucketProject_avatar(t *testing.T) {
+	var project Project
+
+	resourceName := "bitbucket_project.test"
+	testTeam := os.Getenv("BITBUCKET_TEAM")
+	rName := acctest.RandomWithPrefix("tf-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBitbucketProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccBitbucketProjectAvatarConfig(testTeam, rName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketProjectExists(resourceName, &project),
+					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
 				),
 			},
 			{
@@ -49,7 +82,23 @@ func testAccBitbucketProjectConfig(team, rName string) string {
 resource "bitbucket_project" "test" {
   owner = %[1]q
   name  = %[2]q
-  key   = "TESTPROJ" 
+  key   = "AAAAAA"
+}
+`, team, rName)
+}
+
+func testAccBitbucketProjectAvatarConfig(team, rName string) string {
+	return fmt.Sprintf(`
+resource "bitbucket_project" "test" {
+  owner = %[1]q
+  name  = %[2]q
+  key   = "BBBBB"
+
+  link {
+    avatar {
+      href = "https://d301sr5gafysq2.cloudfront.net/dfb18959be9c/img/repo-avatars/python.png"
+	}
+  }
 }
 `, team, rName)
 }
@@ -67,7 +116,7 @@ func testAccCheckBitbucketProjectDestroy(s *terraform.State) error {
 		}
 
 		if response.StatusCode != 404 {
-			return fmt.Errorf("Repository still exists")
+			return fmt.Errorf("Project still exists")
 		}
 	}
 	return nil

@@ -30,6 +30,15 @@ The following arguments are supported:
 * `key` - (Required) The key used for this project
 * `description` - (Optional) The description of the project
 * `is_private` - (Optional) If you want to keep the project private - defaults to `true`
+* `link` - (Optional) A set of links to a resource related to this object. See [Link](#link) Below.
+
+### Link
+
+* `avatar` - (Optional) A avatr link to a resource related to this object. See [Avatar](#avatar) Below.
+
+#### Avatar
+
+* `href` - (Optional) href of the avatar.
 
 ## Attributes Reference
 
