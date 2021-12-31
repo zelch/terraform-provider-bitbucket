@@ -9,6 +9,7 @@ import (
 )
 
 type apiUser struct {
+	Username      string `json:"username,omitempty"`
 	DisplayName   string `json:"display_name"`
 	UUID          string `json:"uuid"`
 	Nickname      string `json:"nickname"`
@@ -37,6 +38,18 @@ func dataUser() *schema.Resource {
 			"nickname": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"account_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"account_status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"is_staff": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 		},
 	}
@@ -74,6 +87,9 @@ func dataReadUser(d *schema.ResourceData, m interface{}) error {
 	d.Set("uuid", u.UUID)
 	d.Set("nickname", u.Nickname)
 	d.Set("display_name", u.DisplayName)
+	d.Set("account_id", u.AccountId)
+	d.Set("account_status", u.AccountStatus)
+	d.Set("is_staff", u.IsStaff)
 
 	return nil
 }
