@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/url"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -41,6 +42,18 @@ func resourceBranchRestriction() *schema.Resource {
 		Read:   resourceBranchRestrictionsRead,
 		Update: resourceBranchRestrictionsUpdate,
 		Delete: resourceBranchRestrictionsDelete,
+		Importer: &schema.ResourceImporter{
+			State: func(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+				idParts := strings.Split(d.Id(), "/")
+				if len(idParts) != 3 || idParts[0] == "" || idParts[1] == "" || idParts[2] == "" {
+					return nil, fmt.Errorf("unexpected format of ID (%q), expected OWNER/REPO/BRANCH-RESTRICTION-ID", d.Id())
+				}
+				d.SetId(idParts[2])
+				d.Set("owner", idParts[0])
+				d.Set("repository", idParts[1])
+				return []*schema.ResourceData{d}, nil
+			},
+		},
 
 		Schema: map[string]*schema.Schema{
 			"owner": {
