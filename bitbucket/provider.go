@@ -35,7 +35,8 @@ func Provider() *schema.Provider {
 			"bitbucket_deployment_variable": resourceDeploymentVariable(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"bitbucket_user": dataUser(),
+			"bitbucket_user":         dataUser(),
+			"bitbucket_current_user": dataCurrentUser(),
 		},
 	}
 }

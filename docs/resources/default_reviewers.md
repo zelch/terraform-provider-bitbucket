@@ -22,9 +22,7 @@ resource "bitbucket_default_reviewers" "infrastructure" {
   owner      = "myteam"
   repository = "terraform-code"
 
-  reviewers = [
-    "${data.bitbucket_user.reviewer.uuid}",
-  ]
+  reviewers = [data.bitbucket_user.reviewer.uuid]
 }
 ```
 
@@ -36,3 +34,11 @@ The following arguments are supported:
   have write access to.
 * `repository` - (Required) The name of the repository.
 * `reviewers` - (Required) A list of reviewers to use.
+
+## Import
+
+Default Revieers can be imported using the owner and repo separated by a (`/`) and the string `reviewers` and the end, e.g.,
+
+```sh
+terraform import bitbucket_repository.example myteam/terraform-code/reviewers
+```
