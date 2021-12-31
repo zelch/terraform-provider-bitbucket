@@ -30,7 +30,7 @@ There are no arguments available for this data source.
 * `account_status` - The status of the account.
 * `account_id` - The user's Atlassian account ID.
 * `is_staff` - is staff user.
-* `email` - A Set of emails assoicated to current user. See [Email](#email) below.
+* `email` - A Set of emails associated to current user. See [Email](#email) below.
 
 ### Email
 
