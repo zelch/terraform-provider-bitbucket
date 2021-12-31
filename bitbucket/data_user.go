@@ -9,9 +9,12 @@ import (
 )
 
 type apiUser struct {
-	DisplayName string `json:"display_name"`
-	UUID        string `json:"uuid"`
-	Nickname    string `json:"nickname"`
+	DisplayName   string `json:"display_name"`
+	UUID          string `json:"uuid"`
+	Nickname      string `json:"nickname"`
+	AccountId     string `json:"account_id"`
+	AccountStatus string `json:"account_status"`
+	IsStaff       bool   `json:"is_staff"`
 }
 
 func dataUser() *schema.Resource {
