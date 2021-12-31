@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strings"
 )
 
 // Project is the project data we need to send to create a project on the bitbucket api
 type Project struct {
-	Key         string `json:"key,omitempty"`
-	IsPrivate   bool   `json:"is_private,omitempty"`
-	Owner       string `json:"owner.username,omitempty"`
-	Description string `json:"description,omitempty"`
-	Name        string `json:"name,omitempty"`
-	UUID        string `json:"uuid,omitempty"`
+	Key                     string `json:"key,omitempty"`
+	IsPrivate               bool   `json:"is_private,omitempty"`
+	Owner                   string `json:"owner.username,omitempty"`
+	Description             string `json:"description,omitempty"`
+	Name                    string `json:"name,omitempty"`
+	UUID                    string `json:"uuid,omitempty"`
+	HasPubliclyVisibleRepos bool   `json:"has_publicly_visible_repos,omitempty"`
 }
 
 func resourceProject() *schema.Resource {
@@ -51,6 +53,14 @@ func resourceProject() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"has_publicly_visible_repos": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"uuid": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -137,7 +147,7 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 			d.Set("owner", idparts[0])
 			d.Set("key", idparts[1])
 		} else {
-			return fmt.Errorf("Incorrect ID format, should match `owner/key`")
+			return fmt.Errorf("incorrect ID format, should match `owner/key`")
 		}
 	}
 
@@ -153,6 +163,12 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 		projectKey,
 	))
 
+	if projectReq.StatusCode == 404 {
+		log.Printf("[WARN] Project (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
 	if projectReq.StatusCode == 200 {
 
 		var project Project
@@ -162,15 +178,21 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 			return readerr
 		}
 
+		log.Printf("[DEBUG] Project Response JSON: %v", string(body))
+
 		decodeerr := json.Unmarshal(body, &project)
 		if decodeerr != nil {
 			return decodeerr
 		}
 
+		log.Printf("[DEBUG] Project Response Decoded: %#v", project)
+
 		d.Set("key", project.Key)
 		d.Set("is_private", project.IsPrivate)
 		d.Set("name", project.Name)
 		d.Set("description", project.Description)
+		d.Set("has_publicly_visible_repos", project.HasPubliclyVisibleRepos)
+		d.Set("uuid", project.UUID)
 	}
 
 	return nil

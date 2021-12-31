@@ -14,7 +14,6 @@ This resource allows you to manage your projects in your bitbucket team.
 ## Example Usage
 
 ```hcl
-# Manage your repository
 resource "bitbucket_project" "devops" {
   owner = "my-team"
   name  = "devops"
@@ -31,6 +30,11 @@ The following arguments are supported:
 * `key` - (Required) The key used for this project
 * `description` - (Optional) The description of the project
 * `is_private` - (Optional) If you want to keep the project private - defaults to `true`
+
+## Attributes Reference
+
+* `uuid` - The project's immutable id.
+* `has_publicly_visible_repos` - Indicates whether the project contains publicly visible repositories. Note that private projects cannot contain public repositories.
 
 ## Import
 
