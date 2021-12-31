@@ -41,7 +41,7 @@ The following arguments are supported:
 
 ## Import
 
-Repositories can be imported using their `owner/repo-name/hook-id` ID, e.g.
+Hooks can be imported using their `owner/repo-name/hook-id` ID, e.g.
 
 ```sh
 terraform import bitbucket_hook.hook my-account/my-repo/hook-id

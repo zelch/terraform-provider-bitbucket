@@ -32,6 +32,12 @@ func TestAccBitbucketBranchRestriction_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "branch_match_kind", "glob"),
 				),
 			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCheckBitbucketBranchRestrictionImportStateIdFunc(resourceName),
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -57,6 +63,12 @@ func TestAccBitbucketBranchRestriction_model(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "branch_match_kind", "branching_model"),
 					resource.TestCheckResourceAttr(resourceName, "branch_type", "production"),
 				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCheckBitbucketBranchRestrictionImportStateIdFunc(resourceName),
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -123,5 +135,15 @@ func testAccCheckBitbucketBranchRestrictionExists(n string, branchRestriction *B
 			return fmt.Errorf("No BranchRestriction ID is set")
 		}
 		return nil
+	}
+}
+
+func testAccCheckBitbucketBranchRestrictionImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return "", fmt.Errorf("Not found: %s", resourceName)
+		}
+		return fmt.Sprintf("%s/%s/%s", rs.Primary.Attributes["owner"], rs.Primary.Attributes["repository"], rs.Primary.ID), nil
 	}
 }
