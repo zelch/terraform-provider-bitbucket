@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 // CloneURL is the internal struct we use to represent urls
@@ -55,9 +57,10 @@ func resourceRepository() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"scm": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "git",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "git",
+				ValidateFunc: validation.StringInSlice([]string{"hg", "git"}, false),
 			},
 			"has_wiki": {
 				Type:     schema.TypeBool,
@@ -97,9 +100,10 @@ func resourceRepository() *schema.Resource {
 				Default:  false,
 			},
 			"fork_policy": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "allow_forks",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "allow_forks",
+				ValidateFunc: validation.StringInSlice([]string{"allow_forks", "no_public_forks", "no_forks"}, false),
 			},
 			"language": {
 				Type:     schema.TypeString,
@@ -120,6 +124,10 @@ func resourceRepository() *schema.Resource {
 			"slug": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+			},
+			"uuid": {
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 		},
@@ -169,8 +177,7 @@ func resourceRepositoryUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	var pipelinesEnabled bool
-	pipelinesEnabled = d.Get("pipelines_enabled").(bool)
+	pipelinesEnabled := d.Get("pipelines_enabled").(bool)
 	pipelinesConfig := &PipelinesEnabled{Enabled: pipelinesEnabled}
 
 	bytedata, err := json.Marshal(pipelinesConfig)
@@ -215,8 +222,7 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId(string(fmt.Sprintf("%s/%s", d.Get("owner").(string), repoSlug)))
 
-	var pipelinesEnabled bool
-	pipelinesEnabled = d.Get("pipelines_enabled").(bool)
+	pipelinesEnabled := d.Get("pipelines_enabled").(bool)
 	pipelinesConfig := &PipelinesEnabled{Enabled: pipelinesEnabled}
 
 	bytedata, err = json.Marshal(pipelinesConfig)
@@ -235,6 +241,7 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 
 	return resourceRepositoryRead(d, m)
 }
+
 func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 	id := d.Id()
 	if id != "" {
@@ -243,7 +250,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 			d.Set("owner", idparts[0])
 			d.Set("slug", idparts[1])
 		} else {
-			return fmt.Errorf("Incorrect ID format, should match `owner/slug`")
+			return fmt.Errorf("incorrect ID format, should match `owner/slug`")
 		}
 	}
 
@@ -253,11 +260,15 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 		repoSlug = d.Get("name").(string)
 	}
 
+	owner := d.Get("owner").(string)
 	client := m.(*Client)
-	repoReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s",
-		d.Get("owner").(string),
-		repoSlug,
-	))
+	repoReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s", owner, repoSlug))
+
+	if repoReq.StatusCode == 404 {
+		log.Printf("[WARN] Repository (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
 
 	if repoReq.StatusCode == 200 {
 
@@ -268,10 +279,14 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 			return readerr
 		}
 
+		log.Printf("[DEBUG] Repository Response JSON: %v", string(body))
+
 		decodeerr := json.Unmarshal(body, &repo)
 		if decodeerr != nil {
 			return decodeerr
 		}
+
+		log.Printf("[DEBUG] Repository Response Decoded: %#v", repo)
 
 		d.Set("scm", repo.SCM)
 		d.Set("is_private", repo.IsPrivate)
@@ -286,6 +301,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 		d.Set("website", repo.Website)
 		d.Set("description", repo.Description)
 		d.Set("project_key", repo.Project.Key)
+		d.Set("uuid", repo.UUID)
 
 		for _, cloneURL := range repo.Links.Clone {
 			if cloneURL.Name == "https" {
@@ -294,9 +310,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 				d.Set("clone_ssh", cloneURL.Href)
 			}
 		}
-		pipelinesConfigReq, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config",
-			d.Get("owner").(string),
-			repoSlug))
+		pipelinesConfigReq, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config", owner, repoSlug))
 
 		// pipelines_config returns 404 if they've never been enabled for the project
 		if err != nil && pipelinesConfigReq.StatusCode != 404 {
@@ -334,10 +348,7 @@ func resourceRepositoryDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	client := m.(*Client)
-	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s",
-		d.Get("owner").(string),
-		repoSlug,
-	))
+	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s", d.Get("owner").(string), repoSlug))
 
 	return err
 }

@@ -43,8 +43,8 @@ The following arguments are supported:
   have write access to.
 * `name` - (Required) The name of the repository.
 * `slug` - (Optional) The slug of the repository.
-* `scm` - (Optional) What SCM you want to use. Valid options are hg or git.
-  Defaults to git.
+* `scm` - (Optional) What SCM you want to use. Valid options are `hg` or `git`.
+  Defaults to `git`.
 * `is_private` - (Optional) If this should be private or not. Defaults to `true`.
 * `website` - (Optional) URL of website associated with this repository.
 * `language` - (Optional) What the language of this repository should be.
@@ -53,14 +53,15 @@ The following arguments are supported:
 * `project_key` - (Optional) If you want to have this repo associated with a
   project.
 * `fork_policy` - (Optional) What the fork policy should be. Defaults to
-  allow_forks.
+  `allow_forks`. Valid values are `allow_forks`, `no_public_forks`, `no_forks`.
 * `description` - (Optional) What the description of the repo is.
 * `pipelines_enabled` - (Optional) Turn on to enable pipelines support
 
-## Computed Arguments
+## Attributes Reference
 
-The following arguments are computed. You can access both `clone_ssh` and
-`clone_https` for getting a clone URL.
+* `clone_ssh` - The SSH clone URL.
+* `clone_https` - The HTTPS clone URL.
+* `uuid` - the uuid of the repository resource.
 
 ## Import
 
