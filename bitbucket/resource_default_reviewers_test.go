@@ -5,30 +5,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccBitbucketDefaultReviewers_basic(t *testing.T) {
-
+	rName := acctest.RandomWithPrefix("tf-test")
+	owner := os.Getenv("BITBUCKET_TEAM")
 	testUser := os.Getenv("BITBUCKET_USERNAME")
-	testAccBitbucketDefaultReviewersConfig := fmt.Sprintf(`
-		data "bitbucket_user" "reviewer" {
-			username = "%s"
-		}
-		resource "bitbucket_repository" "test_repo" {
-			owner = "%s"
-			name = "test-repo-default-reviewers"
-		}
-
-		resource "bitbucket_default_reviewers" "test_reviewers" {
-			owner = "%s"
-			repository = "${bitbucket_repository.test_repo.name}"
-			reviewers = [
-				"${data.bitbucket_user.reviewer.uuid}",
-			]
-		}
-	`, testUser, testUser, testUser)
+	resourceName := "bitbucket_default_reviewers.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -36,19 +22,51 @@ func TestAccBitbucketDefaultReviewers_basic(t *testing.T) {
 		CheckDestroy: testAccCheckBitbucketDefaultReviewersDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccBitbucketDefaultReviewersConfig,
+				Config: testAccBitbucketDefaultReviewersConfig(owner, testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketDefaultReviewersExists("bitbucket_default_reviewers.test_reviewers"),
+					testAccCheckBitbucketDefaultReviewersExists(resourceName),
+					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
+					resource.TestCheckResourceAttr(resourceName, "reviewers.#", "1"),
+					resource.TestCheckTypeSetElemAttrPair(resourceName, "reviewers.*", "data.bitbucket_current_user.test", "uuid"),
 				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
+func testAccBitbucketDefaultReviewersConfig(owner, user, rName string) string {
+	return fmt.Sprintf(`
+data "bitbucket_current_user" "test" {}
+
+resource "bitbucket_repository" "test" {
+  owner = %[1]q
+  name  = %[3]q
+}
+
+resource "bitbucket_default_reviewers" "test" {
+  owner      = %[1]q
+  repository = bitbucket_repository.test.name
+  reviewers  = [data.bitbucket_current_user.test.uuid]
+}
+`, owner, user, rName)
+}
+
 func testAccCheckBitbucketDefaultReviewersDestroy(s *terraform.State) error {
-	_, ok := s.RootModule().Resources["bitbucket_default_reviewers.test_reviewers"]
-	if !ok {
-		return fmt.Errorf("Not found %s", "bitbucket_default_reviewers.test_reviewers")
+	client := testAccProvider.Meta().(*Client)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "bitbucket_default_reviewers" {
+			continue
+		}
+		response, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/default-reviewers", rs.Primary.Attributes["owner"], rs.Primary.Attributes["repository"]))
+
+		if response.StatusCode != 404 {
+			return fmt.Errorf("Defaults Reviewer still exists")
+		}
 	}
 	return nil
 }
