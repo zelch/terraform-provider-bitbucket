@@ -25,6 +25,7 @@ func Provider() *schema.Provider {
 		ConfigureFunc: providerConfigure,
 		ResourcesMap: map[string]*schema.Resource{
 			"bitbucket_hook":                resourceHook(),
+			"bitbucket_group":               resourceGroup(),
 			"bitbucket_default_reviewers":   resourceDefaultReviewers(),
 			"bitbucket_repository":          resourceRepository(),
 			"bitbucket_repository_variable": resourceRepositoryVariable(),
@@ -38,6 +39,7 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"bitbucket_user":         dataUser(),
 			"bitbucket_current_user": dataCurrentUser(),
+			"bitbucket_workspace":    dataWorkspace(),
 		},
 	}
 }
