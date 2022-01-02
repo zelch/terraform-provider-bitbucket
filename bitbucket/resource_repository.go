@@ -13,15 +13,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-// CloneURL is the internal struct we use to represent urls
-type CloneURL struct {
-	Href string `json:"href,omitempty"`
-	Name string `json:"name,omitempty"`
-}
-
 // PipelinesEnabled is the struct we send to turn on or turn off pipelines for a repository
 type PipelinesEnabled struct {
 	Enabled bool `json:"enabled"`
+}
+
+type RepoLinks struct {
+	Clone  []Link `json:"clone,omitempty"`
+	Avatar Link   `json:"avatar,omitempty"`
 }
 
 // Repository is the struct we need to send off to the Bitbucket API to create a repository
@@ -40,9 +39,7 @@ type Repository struct {
 	Project     struct {
 		Key string `json:"key,omitempty"`
 	} `json:"project,omitempty"`
-	Links struct {
-		Clone []CloneURL `json:"clone,omitempty"`
-	} `json:"links,omitempty"`
+	Links *RepoLinks `json:"links,omitempty"`
 }
 
 func resourceRepository() *schema.Resource {
@@ -130,6 +127,32 @@ func resourceRepository() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"link": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"avatar": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"href": {
+										Type:     schema.TypeString,
+										Optional: true,
+										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+											return strings.HasPrefix(old, "https://bytebucket.org/ravatar/")
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -146,6 +169,10 @@ func newRepositoryFromResource(d *schema.ResourceData) *Repository {
 		HasIssues:   d.Get("has_issues").(bool),
 		SCM:         d.Get("scm").(string),
 		Website:     d.Get("website").(string),
+	}
+
+	if v, ok := d.GetOk("link"); ok && len(v.([]interface{})) > 0 && v.([]interface{}) != nil {
+		repo.Links = expandRepoLinks(v.([]interface{}))
 	}
 
 	repo.Project.Key = d.Get("project_key").(string)
@@ -310,6 +337,9 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 				d.Set("clone_ssh", cloneURL.Href)
 			}
 		}
+
+		d.Set("link", flattenRepoLinks(repo.Links))
+
 		pipelinesConfigReq, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config", owner, repoSlug))
 
 		// pipelines_config returns 404 if they've never been enabled for the project
@@ -351,4 +381,36 @@ func resourceRepositoryDelete(d *schema.ResourceData, m interface{}) error {
 	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s", d.Get("owner").(string), repoSlug))
 
 	return err
+}
+
+func expandRepoLinks(l []interface{}) *RepoLinks {
+	if len(l) == 0 || l[0] == nil {
+		return nil
+	}
+
+	tfMap, ok := l[0].(map[string]interface{})
+
+	if !ok {
+		return nil
+	}
+
+	rp := &RepoLinks{}
+
+	if v, ok := tfMap["avatar"].([]interface{}); ok && len(v) > 0 {
+		rp.Avatar = expandProjectLink(v)
+	}
+
+	return rp
+}
+
+func flattenRepoLinks(rp *RepoLinks) []interface{} {
+	if rp == nil {
+		return []interface{}{}
+	}
+
+	m := map[string]interface{}{
+		"avatar": flattenProjectLink(rp.Avatar),
+	}
+
+	return []interface{}{m}
 }

@@ -55,7 +55,16 @@ The following arguments are supported:
 * `fork_policy` - (Optional) What the fork policy should be. Defaults to
   `allow_forks`. Valid values are `allow_forks`, `no_public_forks`, `no_forks`.
 * `description` - (Optional) What the description of the repo is.
-* `pipelines_enabled` - (Optional) Turn on to enable pipelines support
+* `pipelines_enabled` - (Optional) Turn on to enable pipelines support.
+* `link` - (Optional) A set of links to a resource related to this object. See [Link](#link) Below.
+
+### Link
+
+* `avatar` - (Optional) A avatr link to a resource related to this object. See [Avatar](#avatar) Below.
+
+#### Avatar
+
+* `href` - (Optional) href of the avatar.
 
 ## Attributes Reference
 

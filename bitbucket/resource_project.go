@@ -29,6 +29,7 @@ type ProjectLinks struct {
 
 type Link struct {
 	Href string `json:"href,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 func resourceProject() *schema.Resource {

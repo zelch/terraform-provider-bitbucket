@@ -37,6 +37,39 @@ func TestAccBitbucketRepository_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "slug", rName),
 					resource.TestCheckResourceAttr(resourceName, "is_private", "true"),
 					resource.TestCheckResourceAttr(resourceName, "description", ""),
+					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccBitbucketRepository_avatar(t *testing.T) {
+	var repo Repository
+
+	rName := acctest.RandomWithPrefix("tf-test")
+	testUser := os.Getenv("BITBUCKET_TEAM")
+	resourceName := "bitbucket_repository.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBitbucketRepositoryDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccBitbucketRepoAvatarConfig(testUser, rName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
+					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
 				),
 			},
 			{
@@ -92,6 +125,21 @@ func testAccBitbucketRepoConfig(testUser, rName string) string {
 resource "bitbucket_repository" "test" {
   owner = %[1]q
   name  = %[2]q
+}
+`, testUser, rName)
+}
+
+func testAccBitbucketRepoAvatarConfig(testUser, rName string) string {
+	return fmt.Sprintf(`
+resource "bitbucket_repository" "test" {
+  owner = %[1]q
+  name  = %[2]q
+
+  link {
+    avatar {
+      href = "https://d301sr5gafysq2.cloudfront.net/dfb18959be9c/img/repo-avatars/python.png"
+	}
+  }  
 }
 `, testUser, rName)
 }
