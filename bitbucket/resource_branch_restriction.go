@@ -2,13 +2,16 @@ package bitbucket
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+
 	"net/url"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -38,10 +41,10 @@ type Group struct {
 
 func resourceBranchRestriction() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceBranchRestrictionsCreate,
-		Read:   resourceBranchRestrictionsRead,
-		Update: resourceBranchRestrictionsUpdate,
-		Delete: resourceBranchRestrictionsDelete,
+		CreateContext: resourceBranchRestrictionsCreate,
+		ReadContext:   resourceBranchRestrictionsRead,
+		UpdateContext: resourceBranchRestrictionsUpdate,
+		DeleteContext: resourceBranchRestrictionsDelete,
 		Importer: &schema.ResourceImporter{
 			State: func(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 				idParts := strings.Split(d.Id(), "/")
@@ -172,14 +175,14 @@ func createBranchRestriction(d *schema.ResourceData) *BranchRestriction {
 
 }
 
-func resourceBranchRestrictionsCreate(d *schema.ResourceData, m interface{}) error {
+func resourceBranchRestrictionsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	branchRestriction := createBranchRestriction(d)
 
 	bytedata, err := json.Marshal(branchRestriction)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	branchRestrictionReq, err := client.Post(fmt.Sprintf("2.0/repositories/%s/%s/branch-restrictions",
@@ -188,25 +191,25 @@ func resourceBranchRestrictionsCreate(d *schema.ResourceData, m interface{}) err
 	), bytes.NewBuffer(bytedata))
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	body, readerr := ioutil.ReadAll(branchRestrictionReq.Body)
 	if readerr != nil {
-		return readerr
+		return diag.FromErr(readerr)
 	}
 
 	decodeerr := json.Unmarshal(body, &branchRestriction)
 	if decodeerr != nil {
-		return decodeerr
+		return diag.FromErr(decodeerr)
 	}
 
 	d.SetId(string(fmt.Sprintf("%v", branchRestriction.ID)))
 
-	return resourceBranchRestrictionsRead(d, m)
+	return resourceBranchRestrictionsRead(ctx, d, m)
 }
 
-func resourceBranchRestrictionsRead(d *schema.ResourceData, m interface{}) error {
+func resourceBranchRestrictionsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 
 	branchRestrictionsReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/branch-restrictions/%s",
@@ -215,19 +218,23 @@ func resourceBranchRestrictionsRead(d *schema.ResourceData, m interface{}) error
 		url.PathEscape(d.Id()),
 	))
 
-	log.Printf("ID: %s", url.PathEscape(d.Id()))
-
 	if branchRestrictionsReq.StatusCode == 200 {
 		var branchRestriction BranchRestriction
 		body, readerr := ioutil.ReadAll(branchRestrictionsReq.Body)
 		if readerr != nil {
-			return readerr
+			return diag.FromErr(readerr)
 		}
 
 		decodeerr := json.Unmarshal(body, &branchRestriction)
 		if decodeerr != nil {
-			return decodeerr
+			return diag.FromErr(decodeerr)
 		}
+
+		tflog.Trace(ctx, "branch restriction read",
+			"id", url.PathEscape(d.Id()),
+			"body", string(body),
+			"status", branchRestrictionsReq.StatusCode,
+		)
 
 		d.SetId(string(fmt.Sprintf("%v", branchRestriction.ID)))
 		d.Set("kind", branchRestriction.Kind)
@@ -242,12 +249,12 @@ func resourceBranchRestrictionsRead(d *schema.ResourceData, m interface{}) error
 	return nil
 }
 
-func resourceBranchRestrictionsUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceBranchRestrictionsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	branchRestriction := createBranchRestriction(d)
 	payload, err := json.Marshal(branchRestriction)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	_, err = client.Put(fmt.Sprintf("2.0/repositories/%s/%s/branch-restrictions/%s",
@@ -257,13 +264,13 @@ func resourceBranchRestrictionsUpdate(d *schema.ResourceData, m interface{}) err
 	), bytes.NewBuffer(payload))
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return resourceBranchRestrictionsRead(d, m)
+	return resourceBranchRestrictionsRead(ctx, d, m)
 }
 
-func resourceBranchRestrictionsDelete(d *schema.ResourceData, m interface{}) error {
+func resourceBranchRestrictionsDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s/branch-restrictions/%s",
 		d.Get("owner").(string),
@@ -271,5 +278,5 @@ func resourceBranchRestrictionsDelete(d *schema.ResourceData, m interface{}) err
 		url.PathEscape(d.Id()),
 	))
 
-	return err
+	return diag.FromErr(err)
 }
