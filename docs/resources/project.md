@@ -17,7 +17,7 @@ This resource allows you to manage your projects in your bitbucket team.
 resource "bitbucket_project" "devops" {
   owner = "my-team"
   name  = "devops"
-  key = "DEVOPS"
+  key   = "DEVOPS"
 }
 ```
 
