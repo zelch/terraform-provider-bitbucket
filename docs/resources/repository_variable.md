@@ -15,16 +15,16 @@ This resource allows you to setup pipelines variables to manage your builds with
 
 ```hcl
 resource "bitbucket_repository" "monorepo" {
-    owner = "gob"
-    name = "illusions"
-    pipelines_enable = true
+  owner            = "gob"
+  name             = "illusions"
+  pipelines_enable = true
 }
 
 resource "bitbucket_repository_variable" "debug" {
-    key = "DEBUG"
-    value = "true"
-    repository = "${bitbucket_repository.monorepo.id}"
-    secured = false
+  key        = "DEBUG"
+  value      = "true"
+  repository = "${bitbucket_repository.monorepo.id}"
+  secured    = false
 }
 ```
 
