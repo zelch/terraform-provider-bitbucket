@@ -1,9 +1,9 @@
 ---
 layout: "bitbucket"
-page_title: "Bitbucket: bitbucket_user"
-sidebar_current: "docs-bitbucket-data-user"
+page_title: "Bitbucket: bitbucket_current_user"
+sidebar_current: "docs-bitbucket-data-current-user"
 description: |-
-  Provides a data for a Bitbucket user
+  Provides a data for the current Bitbucket user
 ---
 
 # bitbucket\_user

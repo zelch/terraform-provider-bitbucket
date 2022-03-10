@@ -38,6 +38,7 @@ func Provider() *schema.Provider {
 			"bitbucket_workspace_hook":      resourceWorkspaceHook(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"bitbucket_hook_types":   dataHookTypes(),
 			"bitbucket_user":         dataUser(),
 			"bitbucket_current_user": dataCurrentUser(),
 			"bitbucket_workspace":    dataWorkspace(),
