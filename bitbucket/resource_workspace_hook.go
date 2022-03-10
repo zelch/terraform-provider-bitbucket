@@ -13,16 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-// // Hook is the hook you want to add to a bitbucket repository
-// type Hook struct {
-// 	UUID                 string   `json:"uuid,omitempty"`
-// 	URL                  string   `json:"url,omitempty"`
-// 	Description          string   `json:"description,omitempty"`
-// 	Active               bool     `json:"active"`
-// 	SkipCertVerification bool     `json:"skip_cert_verification"`
-// 	Events               []string `json:"events,omitempty"`
-// }
-
 func resourceWorkspaceHook() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceWorkspaceHookCreate,
