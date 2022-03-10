@@ -35,6 +35,7 @@ func Provider() *schema.Provider {
 			"bitbucket_branching_model":     resourceBranchingModel(),
 			"bitbucket_deployment":          resourceDeployment(),
 			"bitbucket_deployment_variable": resourceDeploymentVariable(),
+			"bitbucket_workspace_hook":      resourceWorkspaceHook(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"bitbucket_user":         dataUser(),
