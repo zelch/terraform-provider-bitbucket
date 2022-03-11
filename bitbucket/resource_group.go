@@ -9,11 +9,14 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 type UserGroup struct {
-	Name string `json:"name,omitempty"`
-	Slug string `json:"slug,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Slug       string `json:"slug,omitempty"`
+	AutoAdd    bool   `json:"auto_add,omitempty"`
+	Permission string `json:"permission,omitempty"`
 }
 
 func resourceGroup() *schema.Resource {
@@ -35,11 +38,19 @@ func resourceGroup() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				// ForceNew: true,
 			},
 			"slug": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"auto_add": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"permission": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"read", "write", "admin"}, false),
 			},
 		},
 	}
@@ -84,7 +95,9 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	groupsReq, _ := client.Get(fmt.Sprintf("1.0/groups/%s/", workspace))
+
+	// filter := fmt.Sprintf("group=%s/%s", workspace, slug)
+	groupsReq, _ := client.Get(fmt.Sprintf("1.0/groups/%s/%s", workspace, slug))
 
 	if groupsReq.StatusCode == 404 {
 		log.Printf("[WARN] Group (%s) not found, removing from state", d.Id())
@@ -93,10 +106,11 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if groupsReq.Body == nil {
-		return fmt.Errorf("error getting Group (%s): empty response", d.Id())
+		return fmt.Errorf("error readong Group (%s): empty response", d.Id())
 	}
 
-	var groups []*UserGroup
+	var grp *UserGroup
+
 	body, readerr := ioutil.ReadAll(groupsReq.Body)
 	if readerr != nil {
 		return readerr
@@ -104,30 +118,17 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 
 	log.Printf("[DEBUG] Groups Response JSON: %v", string(body))
 
-	decodeerr := json.Unmarshal(body, &groups)
+	decodeerr := json.Unmarshal(body, &grp)
 	if decodeerr != nil {
 		return decodeerr
 	}
 
-	log.Printf("[DEBUG] Groups Response Decoded: %#v", groups)
-
-	if len(groups) == 0 {
-		return fmt.Errorf("error getting Group (%s): empty response", d.Id())
-	}
-
-	var group *UserGroup
-	for _, grp := range groups {
-		if grp.Slug == slug {
-			group = grp
-			break
-		}
-	}
-
-	log.Printf("[DEBUG] Group Response Decoded: %#v", groups)
+	log.Printf("[DEBUG] Groups Response Decoded: %#v", grp)
 
 	d.Set("workspace", workspace)
-	d.Set("slug", group.Slug)
-	d.Set("name", group.Name)
+	d.Set("slug", grp.Slug)
+	d.Set("name", grp.Name)
+	d.Set("auto_add", grp.AutoAdd)
 
 	return nil
 }
@@ -171,11 +172,19 @@ func resourceGroupsDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func expandGroup(d *schema.ResourceData) *UserGroup {
-	key := &UserGroup{
+	group := &UserGroup{
 		Name: d.Get("name").(string),
 	}
 
-	return key
+	if v, ok := d.GetOkExists("auto_add"); ok {
+		group.AutoAdd = v.(bool)
+	}
+
+	if v, ok := d.GetOk("permission"); ok && v.(string) != "" {
+		group.Permission = v.(string)
+	}
+
+	return group
 }
 
 func groupId(id string) (string, string, error) {
