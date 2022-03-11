@@ -15,7 +15,6 @@ This allows you for setting up branch restrictions for your repository.
 ## Example Usage
 
 ```hcl
-# Manage your repositories branch restrictions
 resource "bitbucket_branch_restriction" "master" {
   owner      = "myteam"
   repository = "terraform-code"

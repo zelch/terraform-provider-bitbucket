@@ -27,7 +27,6 @@ If you want to create a repository with a CamelCase name, you should provide
 a separate slug
 
 ```hcl
-# Manage your repository
 resource "bitbucket_repository" "infrastructure" {
   owner = "myteam"
   name  = "TerraformCode"
