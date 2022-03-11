@@ -1,12 +1,12 @@
 ---
 layout: "bitbucket"
 page_title: "Bitbucket: bitbucket_ssh_key"
-sidebar_current: "docs-bitbucket-resource-hook"
+sidebar_current: "docs-bitbucket-resource-ssh-key"
 description: |-
   Provides a Bitbucket SSH Key
 ---
 
-# bitbucket\_ssh_key
+# bitbucket\_ssh\_key
 
 Provides a Bitbucket SSH Key resource.
 
@@ -37,7 +37,7 @@ The following arguments are supported:
 
 ## Import
 
-SSH Keys can be imported using their `user_id/key-id` ID, e.g.
+SSH Keys can be imported using their `user-id/key-id` ID, e.g.
 
 ```sh
 terraform import bitbucket_ssh_key.key user-id/key-id
