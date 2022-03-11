@@ -13,7 +13,6 @@ Provides support for setting up default reviewers for your repository. You must 
 ## Example Usage
 
 ```hcl
-# Manage your repositories default reviewers
 data "bitbucket_user" "reviewer" {
   username = "gob"
 }

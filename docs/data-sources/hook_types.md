@@ -1,7 +1,7 @@
 ---
 layout: "bitbucket"
 page_title: "Bitbucket: bitbucket_hook_types"
-sidebar_current: "docs-bitbucket-data-hook_types"
+sidebar_current: "docs-bitbucket-data-hook-types"
 description: |-
   Provides a data for Bitbucket Hook Event Types
 ---

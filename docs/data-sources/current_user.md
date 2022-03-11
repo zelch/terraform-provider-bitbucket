@@ -13,7 +13,6 @@ Provdes a way to fetch data of the current user.
 ## Example Usage
 
 ```hcl
-# Manage your repository
 data "bitbucket_currnet_user" "example" {}
 ```
 
