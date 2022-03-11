@@ -96,7 +96,6 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	// filter := fmt.Sprintf("group=%s/%s", workspace, slug)
 	groupsReq, _ := client.Get(fmt.Sprintf("1.0/groups/%s/%s", workspace, slug))
 
 	if groupsReq.StatusCode == 404 {
@@ -106,7 +105,7 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if groupsReq.Body == nil {
-		return fmt.Errorf("error readong Group (%s): empty response", d.Id())
+		return fmt.Errorf("error reading Group (%s): empty response", d.Id())
 	}
 
 	var grp *UserGroup

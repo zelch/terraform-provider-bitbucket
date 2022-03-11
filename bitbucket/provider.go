@@ -26,6 +26,7 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"bitbucket_hook":                    resourceHook(),
 			"bitbucket_group":                   resourceGroup(),
+			"bitbucket_group_membership":        resourceGroupMembership(),
 			"bitbucket_default_reviewers":       resourceDefaultReviewers(),
 			"bitbucket_repository":              resourceRepository(),
 			"bitbucket_repository_variable":     resourceRepositoryVariable(),
