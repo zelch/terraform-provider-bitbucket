@@ -32,12 +32,24 @@ func TestAccBitbucketGroup_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceName, "workspace", "data.bitbucket_workspace.test", "id"),
 					resource.TestCheckResourceAttr(resourceName, "name", rName),
 					resource.TestCheckResourceAttrSet(resourceName, "slug"),
+					resource.TestCheckResourceAttr(resourceName, "auto_add", "false"),
 				),
 			},
 			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccBitbucketGroupAutoAddConfig(workspace, rName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketGroupExists(resourceName, &group),
+					resource.TestCheckResourceAttrPair(resourceName, "workspace", "data.bitbucket_workspace.test", "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", rName),
+					resource.TestCheckResourceAttrSet(resourceName, "slug"),
+					resource.TestCheckResourceAttr(resourceName, "auto_add", "true"),
+					resource.TestCheckResourceAttr(resourceName, "permission", "read"),
+				),
 			},
 		},
 	})
@@ -50,13 +62,18 @@ func testAccCheckBitbucketGroupDestroy(s *terraform.State) error {
 			continue
 		}
 
-		response, err := client.Get(fmt.Sprintf("1.0/groups/%s/", rs.Primary.Attributes["workspace"]))
+		response, err := client.Get(fmt.Sprintf("1.0/groups/%s/%s",
+			rs.Primary.Attributes["workspace"], rs.Primary.Attributes["slug"]))
+
+		if response.StatusCode == 404 {
+			continue
+		}
 
 		if err != nil {
 			return err
 		}
 
-		var groups []*UserGroup
+		var group *UserGroup
 		body, readerr := ioutil.ReadAll(response.Body)
 		if readerr != nil {
 			return readerr
@@ -64,20 +81,12 @@ func testAccCheckBitbucketGroupDestroy(s *terraform.State) error {
 
 		log.Printf("[DEBUG] Group Response Test JSON: %v", string(body))
 
-		decodeerr := json.Unmarshal(body, &groups)
+		decodeerr := json.Unmarshal(body, &group)
 		if decodeerr != nil {
 			return decodeerr
 		}
 
-		log.Printf("[DEBUG] Group Response Test Decoded: %#v", groups)
-
-		var group *UserGroup
-		for _, grp := range groups {
-			if grp.Slug == rs.Primary.Attributes["slug"] {
-				group = grp
-				break
-			}
-		}
+		log.Printf("[DEBUG] Group Response Test Decoded: %#v", group)
 
 		if group != nil {
 			return fmt.Errorf("Group still exists")
@@ -109,6 +118,21 @@ data "bitbucket_workspace" "test" {
 resource "bitbucket_group" "test" {
   workspace  = data.bitbucket_workspace.test.id
   name       = %[2]q
+}
+`, workspace, rName)
+}
+
+func testAccBitbucketGroupAutoAddConfig(workspace, rName string) string {
+	return fmt.Sprintf(`
+data "bitbucket_workspace" "test" {
+  workspace = %[1]q
+}
+
+resource "bitbucket_group" "test" {
+  workspace  = data.bitbucket_workspace.test.id
+  name       = %[2]q
+  auto_add   = true
+  permission = "read"
 }
 `, workspace, rName)
 }
