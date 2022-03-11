@@ -13,6 +13,7 @@ import (
 
 // sshKey is the data we need to send to create a new SSH Key for the repository
 type SshKey struct {
+	ID      int    `json:"id,omitempty"`
 	UUID    string `json:"uuid,omitempty"`
 	Key     string `json:"key,omitempty"`
 	Label   string `json:"label,omitempty"`

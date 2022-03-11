@@ -30,6 +30,7 @@ func Provider() *schema.Provider {
 			"bitbucket_repository":          resourceRepository(),
 			"bitbucket_repository_variable": resourceRepositoryVariable(),
 			"bitbucket_project":             resourceProject(),
+			"bitbucket_deploy_key":          resourceDeployKey(),
 			"bitbucket_ssh_key":             resourceSshKey(),
 			"bitbucket_branch_restriction":  resourceBranchRestriction(),
 			"bitbucket_branching_model":     resourceBranchingModel(),
