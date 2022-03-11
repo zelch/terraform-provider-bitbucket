@@ -13,7 +13,6 @@ Provdes a way to fetch data on a user.
 ## Example Usage
 
 ```hcl
-# Manage your repository
 data "bitbucket_user" "reviewer" {
   username = "gob"
 }
