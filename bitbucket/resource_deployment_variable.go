@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // DeploymentVariable structure for handling key info
@@ -45,8 +46,9 @@ func resourceDeploymentVariable() *schema.Resource {
 				Required: true,
 			},
 			"value": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
 			},
 			"secured": {
 				Type:     schema.TypeBool,
@@ -140,13 +142,18 @@ func resourceDeploymentVariableRead(d *schema.ResourceData, m interface{}) error
 			return nil
 		}
 
-		var uuid = d.Get("uuid").(string)
 		for _, rv := range prv.Values {
-			if rv.UUID == uuid {
+			if rv.UUID == d.Id() {
 				d.SetId(rv.UUID)
 				d.Set("key", rv.Key)
-				d.Set("value", rv.Value)
 				d.Set("secured", rv.Secured)
+
+				if !rv.Secured {
+					d.Set("value", rv.Value)
+				} else {
+					d.Set("value", d.Get("value").(string))
+				}
+
 				return nil
 			}
 		}
@@ -190,10 +197,10 @@ func resourceDeploymentVariableUpdate(d *schema.ResourceData, m interface{}) err
 func resourceDeploymentVariableDelete(d *schema.ResourceData, m interface{}) error {
 	repository, deployment := parseDeploymentId(d.Get("deployment").(string))
 	client := m.(*Client)
-	_, err := client.Delete(fmt.Sprintf(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables/%s",
+	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables/%s",
 		repository,
 		deployment,
 		d.Get("uuid").(string),
-	)))
+	))
 	return err
 }
