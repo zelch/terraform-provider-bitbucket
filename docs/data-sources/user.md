@@ -24,7 +24,7 @@ The following arguments are supported:
 
 * `username` - (Required) the username of the user to query.
 
-## Exports
+## Attributes Reference
 
 * `uuid` - the uuid that bitbucket users to connect a user to various objects
 * `display_name` - the display name that the user wants to use for GDPR

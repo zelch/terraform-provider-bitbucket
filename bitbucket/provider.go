@@ -40,11 +40,12 @@ func Provider() *schema.Provider {
 			"bitbucket_workspace_hook":      resourceWorkspaceHook(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"bitbucket_ip_ranges":    dataIPRanges(),
-			"bitbucket_hook_types":   dataHookTypes(),
-			"bitbucket_user":         dataUser(),
-			"bitbucket_current_user": dataCurrentUser(),
-			"bitbucket_workspace":    dataWorkspace(),
+			"bitbucket_ip_ranges":            dataIPRanges(),
+			"bitbucket_pipeline_oidc_config": dataPipelineOidcConfig(),
+			"bitbucket_hook_types":           dataHookTypes(),
+			"bitbucket_user":                 dataUser(),
+			"bitbucket_current_user":         dataCurrentUser(),
+			"bitbucket_workspace":            dataWorkspace(),
 		},
 	}
 }
