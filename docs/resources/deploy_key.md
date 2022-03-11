@@ -27,7 +27,9 @@ resource "bitbucket_deploy_key" "test" {
 
 The following arguments are supported:
 
-* `key` - (Required) The Deploy public key value in OpenDeploy format.
+* `workspace` - (Required) The Workspace where the repository resides.
+* `repository` - (Required) The Repository to create deploy key in.
+* `key` - (Required) The SSH public key value in OpenSSH format.
 * `label` - (Optional) The user-defined label for the Deploy key
 
 ## Attributes Reference
