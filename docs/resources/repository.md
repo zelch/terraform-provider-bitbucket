@@ -16,7 +16,6 @@ private, how to fork the repository and other options.
 ## Example Usage
 
 ```hcl
-# Manage your repository
 resource "bitbucket_repository" "infrastructure" {
   owner = "myteam"
   name  = "terraform-code"

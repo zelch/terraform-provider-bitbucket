@@ -15,7 +15,7 @@ This allows you to manage your Pipeline Ssh Keys for a repository.
 ## Example Usage
 
 ```hcl
-resource "bitbucket_deploy_key" "test" {
+resource "bitbucket_pipeline_ssh_key" "test" {
   workspace   = "example"
   repository  = "example"  
   public_key  = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKqP3Cr632C2dNhhgKVcon4ldUSAeKiku2yP9O9/bDtY"
@@ -39,5 +39,5 @@ The following arguments are supported:
 Pipeline Ssh Keys can be imported using their `workspace/repo-slug` ID, e.g.
 
 ```sh
-terraform import bitbucket_deploy_key.key workspace/repo-slug
+terraform import bitbucket_pipeline_ssh_key.key workspace/repo-slug
 ```
