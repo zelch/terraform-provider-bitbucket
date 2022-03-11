@@ -13,7 +13,6 @@ import (
 func TestAccBitbucketDefaultReviewers_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test")
 	owner := os.Getenv("BITBUCKET_TEAM")
-	testUser := os.Getenv("BITBUCKET_USERNAME")
 	resourceName := "bitbucket_default_reviewers.test"
 
 	resource.Test(t, resource.TestCase{
@@ -22,7 +21,7 @@ func TestAccBitbucketDefaultReviewers_basic(t *testing.T) {
 		CheckDestroy: testAccCheckBitbucketDefaultReviewersDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccBitbucketDefaultReviewersConfig(owner, testUser, rName),
+				Config: testAccBitbucketDefaultReviewersConfig(owner, rName),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBitbucketDefaultReviewersExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
@@ -39,13 +38,13 @@ func TestAccBitbucketDefaultReviewers_basic(t *testing.T) {
 	})
 }
 
-func testAccBitbucketDefaultReviewersConfig(owner, user, rName string) string {
+func testAccBitbucketDefaultReviewersConfig(owner, rName string) string {
 	return fmt.Sprintf(`
 data "bitbucket_current_user" "test" {}
 
 resource "bitbucket_repository" "test" {
   owner = %[1]q
-  name  = %[3]q
+  name  = %[2]q
 }
 
 resource "bitbucket_default_reviewers" "test" {
@@ -53,7 +52,7 @@ resource "bitbucket_default_reviewers" "test" {
   repository = bitbucket_repository.test.name
   reviewers  = [data.bitbucket_current_user.test.uuid]
 }
-`, owner, user, rName)
+`, owner, rName)
 }
 
 func testAccCheckBitbucketDefaultReviewersDestroy(s *terraform.State) error {
