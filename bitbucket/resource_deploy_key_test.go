@@ -53,7 +53,6 @@ func TestAccBitbucketDeployKey_label(t *testing.T) {
 
 	owner := os.Getenv("BITBUCKET_TEAM")
 	rName := acctest.RandomWithPrefix("tf-test")
-	rName2 := acctest.RandomWithPrefix("tf-test")
 	userEmail := os.Getenv("BITBUCKET_USERNAME")
 	publicKey, _, err := RandSSHKeyPairSize(2048, userEmail)
 	if err != nil {
@@ -80,15 +79,6 @@ func TestAccBitbucketDeployKey_label(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"key"},
-			},
-			{
-				Config: testAccBitbucketDeployKeyLabelConfig(owner, rName, publicKey, rName2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketDeployKeyExists(resourceName, &deployKey),
-					resource.TestCheckResourceAttrPair(resourceName, "workspace", "bitbucket_repository.test", "owner"),
-					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"), resource.TestCheckResourceAttr(resourceName, "key", publicKey),
-					resource.TestCheckResourceAttr(resourceName, "label", rName2),
-				),
 			},
 		},
 	})
