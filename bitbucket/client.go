@@ -32,8 +32,9 @@ const (
 // Client is the base internal Client to talk to bitbuckets API. This should be a username and password
 // the password should be a app-password.
 type Client struct {
-	Username   string
-	Password   string
+	Username   *string
+	Password   *string
+	OAuthToken *string
 	HTTPClient *http.Client
 }
 
@@ -55,7 +56,16 @@ func (c *Client) Do(method, endpoint string, payload *bytes.Buffer, addJsonHeade
 		return nil, err
 	}
 
-	req.SetBasicAuth(c.Username, c.Password)
+	if c.Username != nil && c.Password != nil {
+		log.Printf("[DEBUG] Setting Basic Auth")
+		req.SetBasicAuth(*c.Username, *c.Password)
+	}
+
+	if c.OAuthToken != nil {
+		log.Printf("[DEBUG] Setting Bearer Token")
+		var bearer = "Bearer " + *c.OAuthToken
+		req.Header.Add("Authorization", bearer)
+	}
 
 	if payload != nil && addJsonHeader {
 		// Can cause bad request when putting default reviews if set.

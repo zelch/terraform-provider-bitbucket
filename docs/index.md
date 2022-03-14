@@ -41,8 +41,11 @@ resource "bitbucket_project" "project" {
 
 The following arguments are supported in the `provider` block:
 
-* `username` - (Required) Your username used to connect to bitbucket. You can
+* `username` - (Optional) Your username used to connect to bitbucket. You can
   also set this via the environment variable. `BITBUCKET_USERNAME`
 
-* `password` - (Required) Your password used to connect to bitbucket. You can
+* `password` - (Optional) Your password used to connect to bitbucket. You can
   also set this via the environment variable. `BITBUCKET_PASSWORD`
+
+* `oauth_token` - (Optional) Your password used to connect to bitbucket. You can
+also set this via the environment variable. `BITBUCKET_OAUTH_TOKEN`
