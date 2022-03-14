@@ -7,19 +7,29 @@ import (
 )
 
 // Provider will create the necessary terraform provider to talk to the Bitbucket APIs you should
-// specify a USERNAME and PASSWORD
+// specify a USERNAME and PASSWORD or a OAUTH Token
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"username": {
-				Required:    true,
-				Type:        schema.TypeString,
-				DefaultFunc: schema.EnvDefaultFunc("BITBUCKET_USERNAME", nil),
+				Optional:      true,
+				Type:          schema.TypeString,
+				DefaultFunc:   schema.EnvDefaultFunc("BITBUCKET_USERNAME", nil),
+				ConflictsWith: []string{"oauth_token"},
+				RequiredWith:  []string{"password"},
 			},
 			"password": {
-				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("BITBUCKET_PASSWORD", nil),
+				Type:          schema.TypeString,
+				Optional:      true,
+				DefaultFunc:   schema.EnvDefaultFunc("BITBUCKET_PASSWORD", nil),
+				ConflictsWith: []string{"oauth_token"},
+				RequiredWith:  []string{"username"},
+			},
+			"oauth_token": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				DefaultFunc:   schema.EnvDefaultFunc("BITBUCKET_OAUTH_TOKEN", nil),
+				ConflictsWith: []string{"username", "password"},
 			},
 		},
 		ConfigureFunc: providerConfigure,
@@ -54,10 +64,24 @@ func Provider() *schema.Provider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
+
 	client := &Client{
-		Username:   d.Get("username").(string),
-		Password:   d.Get("password").(string),
 		HTTPClient: &http.Client{},
+	}
+
+	if v, ok := d.GetOk("username"); ok && v.(string) != "" {
+		user := v.(string)
+		client.Username = &user
+	}
+
+	if v, ok := d.GetOk("password"); ok && v.(string) != "" {
+		pass := v.(string)
+		client.Password = &pass
+	}
+
+	if v, ok := d.GetOk("oauth_token"); ok && v.(string) != "" {
+		token := v.(string)
+		client.OAuthToken = &token
 	}
 
 	return client, nil

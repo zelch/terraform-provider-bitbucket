@@ -1,12 +1,11 @@
 package bitbucket
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"os"
 	"testing"
-)
 
-const testRepo string = "test-repo"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
 
 var testAccProviders map[string]*schema.Provider
 var testAccProvider *schema.Provider
@@ -29,12 +28,8 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	if v := os.Getenv("BITBUCKET_USERNAME"); v == "" {
-		t.Fatal("BITBUCKET_USERNAME must be set for acceptence tests")
-	}
-
-	if v := os.Getenv("BITBUCKET_PASSWORD"); v == "" {
-		t.Fatal("BITBUCKET_PASSWORD must be set for acceptence tests")
+	if v := os.Getenv("BITBUCKET_OAUTH_TOKEN"); v == "" {
+		t.Fatal("BITBUCKET_OAUTH_TOKEN must be set for acceptence tests")
 	}
 
 	if v := os.Getenv("BITBUCKET_TEAM"); v == "" {
