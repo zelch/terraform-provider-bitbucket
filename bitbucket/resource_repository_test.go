@@ -40,6 +40,37 @@ func TestAccBitbucketRepository_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
+					resource.TestCheckResourceAttrSet(resourceName, "project_key"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccBitbucketRepository_project(t *testing.T) {
+	var repo Repository
+
+	rName := acctest.RandomWithPrefix("tf-test")
+	testUser := os.Getenv("BITBUCKET_TEAM")
+	resourceName := "bitbucket_repository.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBitbucketRepositoryDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccBitbucketRepoProjectConfig(testUser, rName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
+					resource.TestCheckResourceAttr(resourceName, "name", rName),
+					resource.TestCheckResourceAttr(resourceName, "owner", testUser),
+					resource.TestCheckResourceAttrPair(resourceName, "project_key", "bitbucket_project.test", "key"),
 				),
 			},
 			{
@@ -129,6 +160,22 @@ resource "bitbucket_repository" "test" {
 `, testUser, rName)
 }
 
+func testAccBitbucketRepoProjectConfig(testUser, rName string) string {
+	return fmt.Sprintf(`
+resource "bitbucket_project" "test" {
+  owner = %[1]q
+  name  = %[2]q
+  key   = "AAAAAAA"
+}
+	
+resource "bitbucket_repository" "test" {
+  owner       = %[1]q
+  name        = %[2]q
+  project_key = bitbucket_project.test.key
+}
+`, testUser, rName)
+}
+
 func testAccBitbucketRepoAvatarConfig(testUser, rName string) string {
 	return fmt.Sprintf(`
 resource "bitbucket_repository" "test" {
@@ -155,18 +202,21 @@ resource "bitbucket_repository" "test" {
 }
 
 func testAccCheckBitbucketRepositoryDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	client := testAccProvider.Meta().(Clients).genClient
+	repoApi := client.ApiClient.RepositoriesApi
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_repository" {
 			continue
 		}
-		response, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s", rs.Primary.Attributes["owner"], rs.Primary.Attributes["name"]))
+		_, res, err := repoApi.RepositoriesWorkspaceRepoSlugGet(client.AuthContext,
+			rs.Primary.Attributes["name"], rs.Primary.Attributes["owner"])
 
 		if err == nil {
-			return fmt.Errorf("The resource was found should have errored")
+			return fmt.Errorf("The repository was found should have errored")
 		}
 
-		if response.StatusCode != 404 {
+		if res.StatusCode != 404 {
 			return fmt.Errorf("Repository still exists")
 		}
 	}

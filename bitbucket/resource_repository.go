@@ -1,14 +1,13 @@
 package bitbucket
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 
 	"strings"
 
+	"github.com/DrFaust92/bitbucket-go-client"
+	"github.com/antihax/optional"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -157,37 +156,40 @@ func resourceRepository() *schema.Resource {
 	}
 }
 
-func newRepositoryFromResource(d *schema.ResourceData) *Repository {
-	repo := &Repository{
-		Name:        d.Get("name").(string),
-		Slug:        d.Get("slug").(string),
+func newRepositoryFromResource(d *schema.ResourceData) *bitbucket.Repository {
+	repo := &bitbucket.Repository{
+		Name: d.Get("name").(string),
+		// Slug:        d.Get("slug").(string),
 		Language:    d.Get("language").(string),
 		IsPrivate:   d.Get("is_private").(bool),
 		Description: d.Get("description").(string),
 		ForkPolicy:  d.Get("fork_policy").(string),
 		HasWiki:     d.Get("has_wiki").(bool),
 		HasIssues:   d.Get("has_issues").(bool),
-		SCM:         d.Get("scm").(string),
-		Website:     d.Get("website").(string),
+		Scm:         d.Get("scm").(string),
+		// Website:     d.Get("website").(string),
 	}
 
 	if v, ok := d.GetOk("link"); ok && len(v.([]interface{})) > 0 && v.([]interface{}) != nil {
 		repo.Links = expandRepoLinks(v.([]interface{}))
 	}
 
-	repo.Project.Key = d.Get("project_key").(string)
+	if v, ok := d.GetOk("project_key"); ok && v.(string) != "" {
+		project := &bitbucket.Project{
+			Key: v.(string),
+		}
+		repo.Project = project
+	}
+
 	return repo
 }
 
 func resourceRepositoryUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	repoApi := c.ApiClient.RepositoriesApi
+	pipeApi := c.ApiClient.PipelinesApi
+
 	repository := newRepositoryFromResource(d)
-
-	var jsonbuffer []byte
-
-	jsonpayload := bytes.NewBuffer(jsonbuffer)
-	enc := json.NewEncoder(jsonpayload)
-	enc.Encode(repository)
 
 	var repoSlug string
 	repoSlug = d.Get("slug").(string)
@@ -195,43 +197,34 @@ func resourceRepositoryUpdate(d *schema.ResourceData, m interface{}) error {
 		repoSlug = d.Get("name").(string)
 	}
 
-	_, err := client.Put(fmt.Sprintf("2.0/repositories/%s/%s",
-		d.Get("owner").(string),
-		repoSlug,
-	), jsonpayload)
+	repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPutOpts{
+		Body: optional.NewInterface(repository),
+	}
+
+	workspace := d.Get("owner").(string)
+	_, _, err := repoApi.RepositoriesWorkspaceRepoSlugPut(c.AuthContext, repoSlug, workspace, repoBody)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating repository (%s): %w", repoSlug, err)
 	}
 
 	pipelinesEnabled := d.Get("pipelines_enabled").(bool)
-	pipelinesConfig := &PipelinesEnabled{Enabled: pipelinesEnabled}
+	pipelinesConfig := &bitbucket.PipelinesConfig{Enabled: pipelinesEnabled}
 
-	bytedata, err := json.Marshal(pipelinesConfig)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = client.Put(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config",
-		d.Get("owner").(string),
-		repoSlug), bytes.NewBuffer(bytedata))
+	_, _, err = pipeApi.UpdateRepositoryPipelineConfig(c.AuthContext, *pipelinesConfig, workspace, repoSlug)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error enabling pipeline for repository (%s): %w", repoSlug, err)
 	}
+
 	return resourceRepositoryRead(d, m)
 }
 
 func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	repoApi := c.ApiClient.RepositoriesApi
+	pipeApi := c.ApiClient.PipelinesApi
 	repo := newRepositoryFromResource(d)
-
-	bytedata, err := json.Marshal(repo)
-
-	if err != nil {
-		return err
-	}
 
 	var repoSlug string
 	repoSlug = d.Get("slug").(string)
@@ -239,31 +232,25 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 		repoSlug = d.Get("name").(string)
 	}
 
-	_, err = client.Post(fmt.Sprintf("2.0/repositories/%s/%s",
-		d.Get("owner").(string),
-		repoSlug,
-	), bytes.NewBuffer(bytedata))
+	repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPostOpts{
+		Body: optional.NewInterface(repo),
+	}
+
+	workspace := d.Get("owner").(string)
+	_, _, err := repoApi.RepositoriesWorkspaceRepoSlugPost(c.AuthContext, repoSlug, workspace, repoBody)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating repository (%s): %w", repoSlug, err)
 	}
 	d.SetId(string(fmt.Sprintf("%s/%s", d.Get("owner").(string), repoSlug)))
 
 	pipelinesEnabled := d.Get("pipelines_enabled").(bool)
-	pipelinesConfig := &PipelinesEnabled{Enabled: pipelinesEnabled}
+	pipelinesConfig := &bitbucket.PipelinesConfig{Enabled: pipelinesEnabled}
 
-	bytedata, err = json.Marshal(pipelinesConfig)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = client.Put(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config",
-		d.Get("owner").(string),
-		repoSlug), bytes.NewBuffer(bytedata))
+	_, _, err = pipeApi.UpdateRepositoryPipelineConfig(c.AuthContext, *pipelinesConfig, workspace, repoSlug)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error enabling pipeline for repository (%s): %w", repoSlug, err)
 	}
 
 	return resourceRepositoryRead(d, m)
@@ -287,83 +274,55 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 		repoSlug = d.Get("name").(string)
 	}
 
-	owner := d.Get("owner").(string)
-	client := m.(Clients).httpClient
-	repoReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s", owner, repoSlug))
+	workspace := d.Get("owner").(string)
+	c := m.(Clients).genClient
+	repoApi := c.ApiClient.RepositoriesApi
+	pipeApi := c.ApiClient.PipelinesApi
 
-	if repoReq.StatusCode == 404 {
+	repoRes, res, err := repoApi.RepositoriesWorkspaceRepoSlugGet(c.AuthContext, repoSlug, workspace)
+	if err != nil {
+		return fmt.Errorf("error reading repository (%s): %w", d.Id(), err)
+	}
+
+	if res.StatusCode == 404 {
 		log.Printf("[WARN] Repository (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
 	}
 
-	if repoReq.StatusCode == 200 {
+	d.Set("scm", repoRes.Scm)
+	d.Set("is_private", repoRes.IsPrivate)
+	d.Set("has_wiki", repoRes.HasWiki)
+	d.Set("has_issues", repoRes.HasIssues)
+	d.Set("name", repoRes.Name)
+	d.Set("slug", repoRes.Name)
+	d.Set("language", repoRes.Language)
+	d.Set("fork_policy", repoRes.ForkPolicy)
+	// d.Set("website", repoRes.Website)
+	d.Set("description", repoRes.Description)
+	d.Set("project_key", repoRes.Project.Key)
+	d.Set("uuid", repoRes.Uuid)
 
-		var repo Repository
-
-		body, readerr := ioutil.ReadAll(repoReq.Body)
-		if readerr != nil {
-			return readerr
+	for _, cloneURL := range repoRes.Links.Clone {
+		if cloneURL.Name == "https" {
+			d.Set("clone_https", cloneURL.Href)
+		} else {
+			d.Set("clone_ssh", cloneURL.Href)
 		}
+	}
 
-		log.Printf("[DEBUG] Repository Response JSON: %v", string(body))
+	d.Set("link", flattenRepoLinks(repoRes.Links))
 
-		decodeerr := json.Unmarshal(body, &repo)
-		if decodeerr != nil {
-			return decodeerr
-		}
+	pipelinesConfigReq, res, err := pipeApi.GetRepositoryPipelineConfig(c.AuthContext, workspace, repoSlug)
 
-		log.Printf("[DEBUG] Repository Response Decoded: %#v", repo)
+	if err != nil && res.StatusCode != 404 {
+		return err
+	}
 
-		d.Set("scm", repo.SCM)
-		d.Set("is_private", repo.IsPrivate)
-		d.Set("has_wiki", repo.HasWiki)
-		d.Set("has_issues", repo.HasIssues)
-		d.Set("name", repo.Name)
-		if repo.Slug != "" && repo.Name != repo.Slug {
-			d.Set("slug", repo.Slug)
-		}
-		d.Set("language", repo.Language)
-		d.Set("fork_policy", repo.ForkPolicy)
-		d.Set("website", repo.Website)
-		d.Set("description", repo.Description)
-		d.Set("project_key", repo.Project.Key)
-		d.Set("uuid", repo.UUID)
-
-		for _, cloneURL := range repo.Links.Clone {
-			if cloneURL.Name == "https" {
-				d.Set("clone_https", cloneURL.Href)
-			} else {
-				d.Set("clone_ssh", cloneURL.Href)
-			}
-		}
-
-		d.Set("link", flattenRepoLinks(repo.Links))
-
-		pipelinesConfigReq, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config", owner, repoSlug))
-
-		// pipelines_config returns 404 if they've never been enabled for the project
-		if err != nil && pipelinesConfigReq.StatusCode != 404 {
-			return err
-		}
-
-		if pipelinesConfigReq.StatusCode == 200 {
-			var pipelinesConfig PipelinesEnabled
-
-			body, readerr := ioutil.ReadAll(pipelinesConfigReq.Body)
-			if readerr != nil {
-				return readerr
-			}
-
-			decodeerr := json.Unmarshal(body, &pipelinesConfig)
-			if decodeerr != nil {
-				return decodeerr
-			}
-
-			d.Set("pipelines_enabled", pipelinesConfig.Enabled)
-		} else if pipelinesConfigReq.StatusCode == 404 {
-			d.Set("pipelines_enabled", false)
-		}
+	if res.StatusCode == 200 {
+		d.Set("pipelines_enabled", pipelinesConfigReq.Enabled)
+	} else if res.StatusCode == 404 {
+		d.Set("pipelines_enabled", false)
 	}
 
 	return nil
@@ -377,13 +336,21 @@ func resourceRepositoryDelete(d *schema.ResourceData, m interface{}) error {
 		repoSlug = d.Get("name").(string)
 	}
 
-	client := m.(Clients).httpClient
-	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s", d.Get("owner").(string), repoSlug))
+	c := m.(Clients).genClient
+	repoApi := c.ApiClient.RepositoriesApi
 
-	return err
+	res, err := repoApi.RepositoriesWorkspaceRepoSlugDelete(c.AuthContext, repoSlug, d.Get("owner").(string), nil)
+	if err != nil {
+		if res.StatusCode == 404 {
+			return nil
+		}
+		return fmt.Errorf("error deleting repository (%s): %w", d.Id(), err)
+	}
+
+	return nil
 }
 
-func expandRepoLinks(l []interface{}) *RepoLinks {
+func expandRepoLinks(l []interface{}) *bitbucket.RepositoryLinks {
 	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
@@ -394,22 +361,43 @@ func expandRepoLinks(l []interface{}) *RepoLinks {
 		return nil
 	}
 
-	rp := &RepoLinks{}
+	rp := &bitbucket.RepositoryLinks{}
 
 	if v, ok := tfMap["avatar"].([]interface{}); ok && len(v) > 0 {
-		rp.Avatar = expandProjectLink(v)
+		rp.Avatar = expandRepoLink(v)
 	}
 
 	return rp
 }
 
-func flattenRepoLinks(rp *RepoLinks) []interface{} {
+func flattenRepoLinks(rp *bitbucket.RepositoryLinks) []interface{} {
 	if rp == nil {
 		return []interface{}{}
 	}
 
 	m := map[string]interface{}{
-		"avatar": flattenProjectLink(rp.Avatar),
+		"avatar": flattenRepoLink(rp.Avatar),
+	}
+
+	return []interface{}{m}
+}
+
+func expandRepoLink(l []interface{}) *bitbucket.Link {
+
+	tfMap, _ := l[0].(map[string]interface{})
+
+	rp := &bitbucket.Link{}
+
+	if v, ok := tfMap["href"].(string); ok {
+		rp.Href = v
+	}
+
+	return rp
+}
+
+func flattenRepoLink(rp *bitbucket.Link) []interface{} {
+	m := map[string]interface{}{
+		"href": rp.Href,
 	}
 
 	return []interface{}{m}
