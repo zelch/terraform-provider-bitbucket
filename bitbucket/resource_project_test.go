@@ -11,8 +11,6 @@ import (
 )
 
 func TestAccBitbucketProject_basic(t *testing.T) {
-	var project Project
-
 	resourceName := "bitbucket_project.test"
 	testTeam := os.Getenv("BITBUCKET_TEAM")
 	rName := acctest.RandomWithPrefix("tf-test")
@@ -25,7 +23,7 @@ func TestAccBitbucketProject_basic(t *testing.T) {
 			{
 				Config: testAccBitbucketProjectConfig(testTeam, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketProjectExists(resourceName, &project),
+					testAccCheckBitbucketProjectExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "has_publicly_visible_repos", "false"),
 					resource.TestCheckResourceAttr(resourceName, "key", "AAAAAA"),
 					resource.TestCheckResourceAttr(resourceName, "name", rName),
@@ -48,8 +46,6 @@ func TestAccBitbucketProject_basic(t *testing.T) {
 }
 
 func TestAccBitbucketProject_avatar(t *testing.T) {
-	var project Project
-
 	resourceName := "bitbucket_project.test"
 	testTeam := os.Getenv("BITBUCKET_TEAM")
 	rName := acctest.RandomWithPrefix("tf-test")
@@ -62,7 +58,7 @@ func TestAccBitbucketProject_avatar(t *testing.T) {
 			{
 				Config: testAccBitbucketProjectAvatarConfig(testTeam, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketProjectExists(resourceName, &project),
+					testAccCheckBitbucketProjectExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
@@ -104,25 +100,29 @@ resource "bitbucket_project" "test" {
 }
 
 func testAccCheckBitbucketProjectDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	client := testAccProvider.Meta().(Clients).genClient
+	projectApi := client.ApiClient.ProjectsApi
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_project" {
 			continue
 		}
-		response, err := client.Get(fmt.Sprintf("2.0/workspaces/%s/projects/%s", rs.Primary.Attributes["owner"], rs.Primary.Attributes["name"]))
+
+		_, res, err := projectApi.WorkspacesWorkspaceProjectsProjectKeyGet(client.AuthContext,
+			rs.Primary.Attributes["key"], rs.Primary.Attributes["owner"])
 
 		if err == nil {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if response.StatusCode != 404 {
+		if res.StatusCode != 404 {
 			return fmt.Errorf("Project still exists")
 		}
 	}
 	return nil
 }
 
-func testAccCheckBitbucketProjectExists(n string, project *Project) resource.TestCheckFunc {
+func testAccCheckBitbucketProjectExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
