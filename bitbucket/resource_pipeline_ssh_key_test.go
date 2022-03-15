@@ -63,7 +63,8 @@ func TestAccBitbucketPipelineSshKey_basic(t *testing.T) {
 }
 
 func testAccCheckBitbucketPipelineSshKeyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	client := testAccProvider.Meta().(Clients).genClient
+	pipeApi := client.ApiClient.PipelinesApi
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_pipeline_ssh_key" {
 			continue
@@ -74,14 +75,13 @@ func testAccCheckBitbucketPipelineSshKeyDestroy(s *terraform.State) error {
 			return err
 		}
 
-		response, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config/ssh/key_pair",
-			workspace, repo))
+		_, res, err := pipeApi.GetRepositoryPipelineSshKeyPair(client.AuthContext, workspace, repo)
 
 		if err == nil {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if response.StatusCode != 404 {
+		if res.StatusCode != 404 {
 			return fmt.Errorf("Pipeline Ssh Key Key still exists")
 		}
 
