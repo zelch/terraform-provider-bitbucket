@@ -1,13 +1,12 @@
 package bitbucket
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"strings"
 
+	"github.com/DrFaust92/bitbucket-go-client"
+	"github.com/antihax/optional"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -58,121 +57,104 @@ func resourceSshKey() *schema.Resource {
 }
 
 func resourceSshKeysCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	sshApi := c.ApiClient.SshApi
 
 	sshKey := expandsshKey(d)
-	log.Printf("[DEBUG] SSH Key Request: %#v", sshKey)
-	bytedata, err := json.Marshal(sshKey)
 
-	if err != nil {
-		return err
+	sshKeyBody := &bitbucket.SshApiUsersSelectedUserSshKeysPostOpts{
+		Body: optional.NewInterface(sshKey),
 	}
 
 	user := d.Get("user").(string)
-	sshKeyReq, err := client.Post(fmt.Sprintf("2.0/users/%s/ssh-keys", user), bytes.NewBuffer(bytedata))
-
+	sshKeyReq, _, err := sshApi.UsersSelectedUserSshKeysPost(c.AuthContext, user, sshKeyBody)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating ssh key: %w", err)
 	}
 
-	body, readerr := ioutil.ReadAll(sshKeyReq.Body)
-	if readerr != nil {
-		return readerr
-	}
-
-	decodeerr := json.Unmarshal(body, &sshKey)
-	if decodeerr != nil {
-		return decodeerr
-	}
-
-	d.SetId(string(fmt.Sprintf("%s/%s", user, sshKey.UUID)))
+	d.SetId(string(fmt.Sprintf("%s/%s", user, sshKeyReq.Uuid)))
 
 	return resourceSshKeysRead(d, m)
 }
 
 func resourceSshKeysRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	sshApi := c.ApiClient.SshApi
 
 	user, keyId, err := sshKeyId(d.Id())
 	if err != nil {
 		return err
 	}
-	sshKeysReq, _ := client.Get(fmt.Sprintf("2.0/users/%s/ssh-keys/%s", user, keyId))
 
-	if sshKeysReq.StatusCode == 404 {
+	sshKeyReq, res, err := sshApi.UsersSelectedUserSshKeysKeyIdGet(c.AuthContext, keyId, user)
+	if err != nil {
+		return fmt.Errorf("error reading ssh key (%s): %w", d.Id(), err)
+	}
+
+	if res.StatusCode == 404 {
 		log.Printf("[WARN] SSH Key (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
 	}
 
-	if sshKeysReq.Body == nil {
+	if res.Body == nil {
 		return fmt.Errorf("error getting SSH Key (%s): empty response", d.Id())
 	}
 
-	var sshKey *SshKey
-	body, readerr := ioutil.ReadAll(sshKeysReq.Body)
-	if readerr != nil {
-		return readerr
-	}
-
-	log.Printf("[DEBUG] SSH Key Response JSON: %v", string(body))
-
-	decodeerr := json.Unmarshal(body, &sshKey)
-	if decodeerr != nil {
-		return decodeerr
-	}
-
-	log.Printf("[DEBUG] SSH Key Response Decoded: %#v", sshKey)
-
 	d.Set("user", user)
 	d.Set("key", d.Get("key").(string))
-	d.Set("label", sshKey.Label)
-	d.Set("uuid", sshKey.UUID)
-	d.Set("comment", sshKey.Comment)
+	d.Set("label", sshKeyReq.Label)
+	d.Set("uuid", sshKeyReq.Uuid)
+	d.Set("comment", sshKeyReq.Comment)
 
 	return nil
 }
 
 func resourceSshKeysUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	sshApi := c.ApiClient.SshApi
 
 	sshKey := expandsshKey(d)
-	log.Printf("[DEBUG] SSH Key Request: %#v", sshKey)
-	bytedata, err := json.Marshal(sshKey)
 
+	sshKeyBody := &bitbucket.SshApiUsersSelectedUserSshKeysKeyIdPutOpts{
+		Body: optional.NewInterface(sshKey),
+	}
+
+	user, keyId, err := sshKeyId(d.Id())
 	if err != nil {
 		return err
 	}
 
-	_, err = client.Put(fmt.Sprintf("2.0/users/%s/ssh-keys/%s",
-		d.Get("user").(string), d.Get("uuid").(string)), bytes.NewBuffer(bytedata))
-
+	_, _, err = sshApi.UsersSelectedUserSshKeysKeyIdPut(c.AuthContext, keyId, user, sshKeyBody)
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating ssh key (%s): %w", d.Id(), err)
 	}
 
 	return resourceSshKeysRead(d, m)
 }
 
 func resourceSshKeysDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	sshApi := c.ApiClient.SshApi
 
 	user, keyId, err := sshKeyId(d.Id())
 	if err != nil {
 		return err
 	}
 
-	_, err = client.Delete(fmt.Sprintf("2.0/users/%s/ssh-keys/%s", user, keyId))
-
+	res, err := sshApi.UsersSelectedUserSshKeysKeyIdDelete(c.AuthContext, keyId, user)
 	if err != nil {
-		return err
+		if res.StatusCode == 404 {
+			return nil
+		}
+		return fmt.Errorf("error deleting ssh key (%s): %w", d.Id(), err)
 	}
 
-	return err
+	return nil
 }
 
-func expandsshKey(d *schema.ResourceData) *SshKey {
-	key := &SshKey{
+func expandsshKey(d *schema.ResourceData) *bitbucket.SshAccountKey {
+	key := &bitbucket.SshAccountKey{
 		Key:   d.Get("key").(string),
 		Label: d.Get("label").(string),
 	}

@@ -12,7 +12,6 @@ import (
 )
 
 func TestAccBitbucketBranchRestriction_basic(t *testing.T) {
-	var branchRestriction BranchRestriction
 	rName := acctest.RandomWithPrefix("tf-test")
 	testUser := os.Getenv("BITBUCKET_TEAM")
 	resourceName := "bitbucket_branch_restriction.test"
@@ -25,7 +24,7 @@ func TestAccBitbucketBranchRestriction_basic(t *testing.T) {
 			{
 				Config: testAccBitbucketBranchRestrictionConfig(testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketBranchRestrictionExists(resourceName, &branchRestriction),
+					testAccCheckBitbucketBranchRestrictionExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "kind", "force"),
 					resource.TestCheckResourceAttr(resourceName, "pattern", "master"),
@@ -43,7 +42,6 @@ func TestAccBitbucketBranchRestriction_basic(t *testing.T) {
 }
 
 func TestAccBitbucketBranchRestriction_model(t *testing.T) {
-	var branchRestriction BranchRestriction
 	rName := acctest.RandomWithPrefix("tf-test")
 	testUser := os.Getenv("BITBUCKET_TEAM")
 	resourceName := "bitbucket_branch_restriction.test"
@@ -56,7 +54,7 @@ func TestAccBitbucketBranchRestriction_model(t *testing.T) {
 			{
 				Config: testAccBitbucketBranchRestrictionModelConfig(testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketBranchRestrictionExists(resourceName, &branchRestriction),
+					testAccCheckBitbucketBranchRestrictionExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "kind", "force"),
 					resource.TestCheckResourceAttr(resourceName, "pattern", ""),
@@ -106,18 +104,23 @@ resource "bitbucket_branch_restriction" "test" {
 }
 
 func testAccCheckBitbucketBranchRestrictionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	client := testAccProvider.Meta().(Clients).genClient
+	brApi := client.ApiClient.BranchRestrictionsApi
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_branch_restriction" {
 			continue
 		}
-		response, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/branch-restrictions/%s", rs.Primary.Attributes["owner"], rs.Primary.Attributes["repository"], url.PathEscape(rs.Primary.Attributes["id"])))
+
+		_, res, err := brApi.RepositoriesWorkspaceRepoSlugBranchRestrictionsIdGet(client.AuthContext,
+			url.PathEscape(rs.Primary.ID),
+			rs.Primary.Attributes["repository"], rs.Primary.Attributes["owner"])
 
 		if err == nil {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if response.StatusCode != 404 {
+		if res.StatusCode != 404 {
 			return fmt.Errorf("BranchRestriction still exists")
 		}
 	}
@@ -125,7 +128,7 @@ func testAccCheckBitbucketBranchRestrictionDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccCheckBitbucketBranchRestrictionExists(n string, branchRestriction *BranchRestriction) resource.TestCheckFunc {
+func testAccCheckBitbucketBranchRestrictionExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

@@ -11,7 +11,6 @@ import (
 )
 
 func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
-	var pipelineSshKnownHost PiplineSshKnownHost
 	resourceName := "bitbucket_pipeline_ssh_known_host.test"
 
 	rName := acctest.RandomWithPrefix("tf-test")
@@ -35,7 +34,7 @@ func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
 			{
 				Config: testAccBitbucketPipelineSshKnownHostConfig(owner, rName, publicKey, "example.com"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketPipelineSshKnownHostExists(resourceName, &pipelineSshKnownHost),
+					testAccCheckBitbucketPipelineSshKnownHostExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "workspace", "bitbucket_repository.test", "owner"),
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "hostname", "example.com"),
@@ -67,7 +66,9 @@ func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
 }
 
 func testAccCheckBitbucketPipelineSshKnownHostDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	client := testAccProvider.Meta().(Clients).genClient
+	pipeApi := client.ApiClient.PipelinesApi
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_pipeline_ssh_known_host" {
 			continue
@@ -78,14 +79,13 @@ func testAccCheckBitbucketPipelineSshKnownHostDestroy(s *terraform.State) error 
 			return err
 		}
 
-		response, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config/ssh/known_hosts/%s",
-			workspace, repo, uuid))
+		_, res, err := pipeApi.GetRepositoryPipelineKnownHost(client.AuthContext, workspace, repo, uuid)
 
 		if err == nil {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if response.StatusCode != 404 {
+		if res.StatusCode != 404 {
 			return fmt.Errorf("Pipeline Ssh Known Host still exists")
 		}
 
@@ -93,7 +93,7 @@ func testAccCheckBitbucketPipelineSshKnownHostDestroy(s *terraform.State) error 
 	return nil
 }
 
-func testAccCheckBitbucketPipelineSshKnownHostExists(n string, pipelineSshKnownHost *PiplineSshKnownHost) resource.TestCheckFunc {
+func testAccCheckBitbucketPipelineSshKnownHostExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

@@ -1,28 +1,13 @@
 package bitbucket
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 
+	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-type PaginatedHookTypes struct {
-	Values []HookType `json:"values,omitempty"`
-	Page   int        `json:"page,omitempty"`
-	Size   int        `json:"size,omitempty"`
-	Next   string     `json:"next,omitempty"`
-}
-
-type HookType struct {
-	Event       string `json:"event"`
-	Category    string `json:"category"`
-	Label       string `json:"label"`
-	Description string `json:"description"`
-}
 
 func dataHookTypes() *schema.Resource {
 	return &schema.Resource{
@@ -62,52 +47,37 @@ func dataHookTypes() *schema.Resource {
 }
 
 func dataReadHookTypes(d *schema.ResourceData, m interface{}) error {
-	c := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	webhooksApi := c.ApiClient.WebhooksApi
 
 	subjectType := d.Get("subject_type").(string)
-	hookTypes, err := c.Get(fmt.Sprintf("2.0/hook_events/%s", subjectType))
+	hookTypes, res, err := webhooksApi.HookEventsSubjectTypeGet(c.AuthContext, subjectType)
 	if err != nil {
 		return err
 	}
 
-	if hookTypes.StatusCode == http.StatusNotFound {
+	if res.StatusCode == http.StatusNotFound {
 		return fmt.Errorf("user not found")
 	}
 
-	if hookTypes.StatusCode >= http.StatusInternalServerError {
+	if res.StatusCode >= http.StatusInternalServerError {
 		return fmt.Errorf("internal server error fetching hook types")
 	}
 
-	body, readerr := ioutil.ReadAll(hookTypes.Body)
-	if readerr != nil {
-		return readerr
-	}
-
-	log.Printf("[DEBUG] Hook Types Response JSON: %v", string(body))
-
-	var hookTypePages PaginatedHookTypes
-
-	decodeerr := json.Unmarshal(body, &hookTypePages)
-	if decodeerr != nil {
-		return decodeerr
-	}
-
-	log.Printf("[DEBUG] Hook Type Pages Response Decoded: %#v", hookTypePages)
-
 	d.SetId(subjectType)
-	d.Set("hook_types", flattenHookTypes(hookTypePages.Values))
+	d.Set("hook_types", flattenHookTypes(hookTypes.Values))
 
 	return nil
 }
 
-func flattenHookTypes(HookTypes []HookType) []interface{} {
-	if len(HookTypes) == 0 {
+func flattenHookTypes(hookTypes []bitbucket.HookEvent) []interface{} {
+	if len(hookTypes) == 0 {
 		return nil
 	}
 
 	var tfList []interface{}
 
-	for _, btRaw := range HookTypes {
+	for _, btRaw := range hookTypes {
 		log.Printf("[DEBUG] HookType Response Decoded: %#v", btRaw)
 
 		hookType := map[string]interface{}{

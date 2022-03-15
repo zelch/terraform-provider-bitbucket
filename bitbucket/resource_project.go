@@ -1,14 +1,13 @@
 package bitbucket
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"strings"
 
+	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 // Project is the project data we need to send to create a project on the bitbucket api
@@ -44,8 +43,9 @@ func resourceProject() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"key": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 			"is_private": {
 				Type:     schema.TypeBool,
@@ -57,12 +57,14 @@ func resourceProject() *schema.Resource {
 				Optional: true,
 			},
 			"owner": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 			"has_publicly_visible_repos": {
 				Type:     schema.TypeBool,
@@ -102,8 +104,8 @@ func resourceProject() *schema.Resource {
 	}
 }
 
-func newProjectFromResource(d *schema.ResourceData) *Project {
-	project := &Project{
+func newProjectFromResource(d *schema.ResourceData) *bitbucket.Project {
+	project := &bitbucket.Project{
 		Name:        d.Get("name").(string),
 		IsPrivate:   d.Get("is_private").(bool),
 		Description: d.Get("description").(string),
@@ -111,21 +113,16 @@ func newProjectFromResource(d *schema.ResourceData) *Project {
 	}
 
 	if v, ok := d.GetOk("link"); ok && len(v.([]interface{})) > 0 && v.([]interface{}) != nil {
-		project.ProjectLinks = expandProjectLinks(v.([]interface{}))
+		project.Links = expandProjectLinks(v.([]interface{}))
 	}
 
 	return project
 }
 
 func resourceProjectUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	projectApi := c.ApiClient.ProjectsApi
 	project := newProjectFromResource(d)
-
-	var jsonbuffer []byte
-
-	jsonpayload := bytes.NewBuffer(jsonbuffer)
-	enc := json.NewEncoder(jsonpayload)
-	enc.Encode(project)
 
 	var projectKey string
 	projectKey = d.Get("key").(string)
@@ -133,27 +130,19 @@ func resourceProjectUpdate(d *schema.ResourceData, m interface{}) error {
 		projectKey = d.Get("key").(string)
 	}
 
-	_, err := client.Put(fmt.Sprintf("2.0/workspaces/%s/projects/%s",
-		d.Get("owner").(string),
-		projectKey,
-	), jsonpayload)
+	_, _, err := projectApi.WorkspacesWorkspaceProjectsProjectKeyPut(c.AuthContext, *project, projectKey, d.Get("owner").(string))
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating project (%s): %w", d.Id(), err)
 	}
 
 	return resourceProjectRead(d, m)
 }
 
 func resourceProjectCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	projectApi := c.ApiClient.ProjectsApi
 	project := newProjectFromResource(d)
-
-	bytedata, err := json.Marshal(project)
-
-	if err != nil {
-		return err
-	}
 
 	var projectKey string
 	projectKey = d.Get("key").(string)
@@ -162,19 +151,15 @@ func resourceProjectCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	owner := d.Get("owner").(string)
-	if owner == "" {
-		return fmt.Errorf("owner must not be a empty string")
-	}
 
-	_, err = client.Post(fmt.Sprintf("2.0/workspaces/%s/projects/",
-		d.Get("owner").(string),
-	), bytes.NewBuffer(bytedata))
+	log.Printf("haha %#v", project)
 
+	projRes, _, err := projectApi.WorkspacesWorkspaceProjectsPost(c.AuthContext, *project, owner)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating project (%s): %w", projectKey, err)
 	}
 
-	d.SetId(string(fmt.Sprintf("%s/%s", d.Get("owner").(string), projectKey)))
+	d.SetId(string(fmt.Sprintf("%s/%s", owner, projRes.Key)))
 
 	return resourceProjectRead(d, m)
 }
@@ -197,44 +182,27 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 		projectKey = d.Get("key").(string)
 	}
 
-	client := m.(Clients).httpClient
-	projectReq, _ := client.Get(fmt.Sprintf("2.0/workspaces/%s/projects/%s",
-		d.Get("owner").(string),
-		projectKey,
-	))
+	c := m.(Clients).genClient
+	projectApi := c.ApiClient.ProjectsApi
 
-	if projectReq.StatusCode == 404 {
+	projRes, res, err := projectApi.WorkspacesWorkspaceProjectsProjectKeyGet(c.AuthContext, projectKey, d.Get("owner").(string))
+
+	if err != nil {
+		return fmt.Errorf("error reading project (%s): %w", d.Id(), err)
+	}
+	if res.StatusCode == 404 {
 		log.Printf("[WARN] Project (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
 	}
 
-	if projectReq.StatusCode == 200 {
-
-		var project Project
-
-		body, readerr := ioutil.ReadAll(projectReq.Body)
-		if readerr != nil {
-			return readerr
-		}
-
-		log.Printf("[DEBUG] Project Response JSON: %v", string(body))
-
-		decodeerr := json.Unmarshal(body, &project)
-		if decodeerr != nil {
-			return decodeerr
-		}
-
-		log.Printf("[DEBUG] Project Response Decoded: %#v", project)
-
-		d.Set("key", project.Key)
-		d.Set("is_private", project.IsPrivate)
-		d.Set("name", project.Name)
-		d.Set("description", project.Description)
-		d.Set("has_publicly_visible_repos", project.HasPubliclyVisibleRepos)
-		d.Set("uuid", project.UUID)
-		d.Set("link", flattenProjectLinks(project.ProjectLinks))
-	}
+	d.Set("key", projRes.Key)
+	d.Set("is_private", projRes.IsPrivate)
+	d.Set("name", projRes.Name)
+	d.Set("description", projRes.Description)
+	d.Set("has_publicly_visible_repos", projRes.HasPubliclyVisibleRepos)
+	d.Set("uuid", projRes.Uuid)
+	d.Set("link", flattenProjectLinks(projRes.Links))
 
 	return nil
 }
@@ -247,16 +215,18 @@ func resourceProjectDelete(d *schema.ResourceData, m interface{}) error {
 		projectKey = d.Get("key").(string)
 	}
 
-	client := m.(Clients).httpClient
-	_, err := client.Delete(fmt.Sprintf("2.0/workspaces/%s/projects/%s",
-		d.Get("owner").(string),
-		projectKey,
-	))
+	c := m.(Clients).genClient
+	projectApi := c.ApiClient.ProjectsApi
 
-	return err
+	_, err := projectApi.WorkspacesWorkspaceProjectsProjectKeyDelete(c.AuthContext, projectKey, d.Get("owner").(string))
+	if err != nil {
+		return fmt.Errorf("error deleting project (%s): %w", d.Id(), err)
+	}
+
+	return nil
 }
 
-func expandProjectLinks(l []interface{}) *ProjectLinks {
+func expandProjectLinks(l []interface{}) *bitbucket.ProjectLinks {
 	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
@@ -267,43 +237,22 @@ func expandProjectLinks(l []interface{}) *ProjectLinks {
 		return nil
 	}
 
-	rp := &ProjectLinks{}
+	rp := &bitbucket.ProjectLinks{}
 
 	if v, ok := tfMap["avatar"].([]interface{}); ok && len(v) > 0 {
-		rp.Avatar = expandProjectLink(v)
+		rp.Avatar = expandLink(v)
 	}
 
 	return rp
 }
 
-func expandProjectLink(l []interface{}) Link {
-
-	tfMap, _ := l[0].(map[string]interface{})
-
-	rp := Link{}
-
-	if v, ok := tfMap["href"].(string); ok {
-		rp.Href = v
-	}
-
-	return rp
-}
-
-func flattenProjectLinks(rp *ProjectLinks) []interface{} {
+func flattenProjectLinks(rp *bitbucket.ProjectLinks) []interface{} {
 	if rp == nil {
 		return []interface{}{}
 	}
 
 	m := map[string]interface{}{
-		"avatar": flattenProjectLink(rp.Avatar),
-	}
-
-	return []interface{}{m}
-}
-
-func flattenProjectLink(rp Link) []interface{} {
-	m := map[string]interface{}{
-		"href": rp.Href,
+		"avatar": flattenLink(rp.Avatar),
 	}
 
 	return []interface{}{m}

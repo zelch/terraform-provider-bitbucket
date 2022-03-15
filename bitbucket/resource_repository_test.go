@@ -11,8 +11,6 @@ import (
 )
 
 func TestAccBitbucketRepository_basic(t *testing.T) {
-	var repo Repository
-
 	rName := acctest.RandomWithPrefix("tf-test")
 	testUser := os.Getenv("BITBUCKET_TEAM")
 	resourceName := "bitbucket_repository.test"
@@ -25,7 +23,7 @@ func TestAccBitbucketRepository_basic(t *testing.T) {
 			{
 				Config: testAccBitbucketRepoConfig(testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
+					testAccCheckBitbucketRepositoryExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", rName),
 					resource.TestCheckResourceAttr(resourceName, "owner", testUser),
 					resource.TestCheckResourceAttr(resourceName, "scm", "git"),
@@ -40,6 +38,35 @@ func TestAccBitbucketRepository_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
+					resource.TestCheckResourceAttrSet(resourceName, "project_key"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccBitbucketRepository_project(t *testing.T) {
+	rName := acctest.RandomWithPrefix("tf-test")
+	testUser := os.Getenv("BITBUCKET_TEAM")
+	resourceName := "bitbucket_repository.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBitbucketRepositoryDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccBitbucketRepoProjectConfig(testUser, rName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketRepositoryExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", rName),
+					resource.TestCheckResourceAttr(resourceName, "owner", testUser),
+					resource.TestCheckResourceAttrPair(resourceName, "project_key", "bitbucket_project.test", "key"),
 				),
 			},
 			{
@@ -52,8 +79,6 @@ func TestAccBitbucketRepository_basic(t *testing.T) {
 }
 
 func TestAccBitbucketRepository_avatar(t *testing.T) {
-	var repo Repository
-
 	rName := acctest.RandomWithPrefix("tf-test")
 	testUser := os.Getenv("BITBUCKET_TEAM")
 	resourceName := "bitbucket_repository.test"
@@ -66,49 +91,10 @@ func TestAccBitbucketRepository_avatar(t *testing.T) {
 			{
 				Config: testAccBitbucketRepoAvatarConfig(testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
+					testAccCheckBitbucketRepositoryExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
-				),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccBitbucketRepository_camelcase(t *testing.T) {
-	var repo Repository
-
-	rName := acctest.RandomWithPrefix("tf-test")
-	rName2 := acctest.RandomWithPrefix("tf-test-2")
-	testUser := os.Getenv("BITBUCKET_TEAM")
-	resourceName := "bitbucket_repository.test"
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckBitbucketRepositoryDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccBitbucketRepoSlugConfig(testUser, rName, rName2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
-					resource.TestCheckResourceAttr(resourceName, "name", rName),
-					resource.TestCheckResourceAttr(resourceName, "owner", testUser),
-					resource.TestCheckResourceAttr(resourceName, "scm", "git"),
-					resource.TestCheckResourceAttr(resourceName, "has_wiki", "false"),
-					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
-					resource.TestCheckResourceAttr(resourceName, "fork_policy", "allow_forks"),
-					resource.TestCheckResourceAttr(resourceName, "language", ""),
-					resource.TestCheckResourceAttr(resourceName, "has_issues", "false"),
-					resource.TestCheckResourceAttr(resourceName, "slug", rName2),
-					resource.TestCheckResourceAttr(resourceName, "is_private", "true"),
-					resource.TestCheckResourceAttr(resourceName, "description", ""),
 				),
 			},
 			{
@@ -125,6 +111,22 @@ func testAccBitbucketRepoConfig(testUser, rName string) string {
 resource "bitbucket_repository" "test" {
   owner = %[1]q
   name  = %[2]q
+}
+`, testUser, rName)
+}
+
+func testAccBitbucketRepoProjectConfig(testUser, rName string) string {
+	return fmt.Sprintf(`
+resource "bitbucket_project" "test" {
+  owner = %[1]q
+  name  = %[2]q
+  key   = "AAAAAAA"
+}
+	
+resource "bitbucket_repository" "test" {
+  owner       = %[1]q
+  name        = %[2]q
+  project_key = bitbucket_project.test.key
 }
 `, testUser, rName)
 }
@@ -155,25 +157,28 @@ resource "bitbucket_repository" "test" {
 }
 
 func testAccCheckBitbucketRepositoryDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	client := testAccProvider.Meta().(Clients).genClient
+	repoApi := client.ApiClient.RepositoriesApi
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_repository" {
 			continue
 		}
-		response, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s", rs.Primary.Attributes["owner"], rs.Primary.Attributes["name"]))
+		_, res, err := repoApi.RepositoriesWorkspaceRepoSlugGet(client.AuthContext,
+			rs.Primary.Attributes["name"], rs.Primary.Attributes["owner"])
 
 		if err == nil {
-			return fmt.Errorf("The resource was found should have errored")
+			return fmt.Errorf("The repository was found should have errored")
 		}
 
-		if response.StatusCode != 404 {
+		if res.StatusCode != 404 {
 			return fmt.Errorf("Repository still exists")
 		}
 	}
 	return nil
 }
 
-func testAccCheckBitbucketRepositoryExists(n string, repository *Repository) resource.TestCheckFunc {
+func testAccCheckBitbucketRepositoryExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
