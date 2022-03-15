@@ -27,7 +27,7 @@ func dataPipelineOidcConfig() *schema.Resource {
 }
 
 func dataReadPipelineOidcConfig(d *schema.ResourceData, m interface{}) error {
-	c := m.(*Client)
+	c := m.(Clients).httpClient
 
 	workspace := d.Get("workspace").(string)
 	req, err := c.Get(fmt.Sprintf("2.0/workspaces/%s/pipelines-config/identity/oidc/.well-known/openid-configuration", workspace))

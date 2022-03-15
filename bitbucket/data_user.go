@@ -56,7 +56,7 @@ func dataUser() *schema.Resource {
 }
 
 func dataReadUser(d *schema.ResourceData, m interface{}) error {
-	c := m.(*Client)
+	c := m.(Clients).httpClient
 
 	username := d.Get("username")
 	if username == "" {

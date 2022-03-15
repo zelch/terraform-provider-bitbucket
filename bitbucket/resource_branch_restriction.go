@@ -176,7 +176,7 @@ func createBranchRestriction(d *schema.ResourceData) *BranchRestriction {
 }
 
 func resourceBranchRestrictionsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	branchRestriction := createBranchRestriction(d)
 
 	bytedata, err := json.Marshal(branchRestriction)
@@ -210,7 +210,7 @@ func resourceBranchRestrictionsCreate(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceBranchRestrictionsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	branchRestrictionsReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/branch-restrictions/%s",
 		d.Get("owner").(string),
@@ -250,7 +250,7 @@ func resourceBranchRestrictionsRead(ctx context.Context, d *schema.ResourceData,
 }
 
 func resourceBranchRestrictionsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	branchRestriction := createBranchRestriction(d)
 	payload, err := json.Marshal(branchRestriction)
 	if err != nil {
@@ -271,7 +271,7 @@ func resourceBranchRestrictionsUpdate(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceBranchRestrictionsDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s/branch-restrictions/%s",
 		d.Get("owner").(string),
 		d.Get("repository").(string),

@@ -55,7 +55,7 @@ func resourceDefaultReviewers() *schema.Resource {
 }
 
 func resourceDefaultReviewersCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	for _, user := range d.Get("reviewers").(*schema.Set).List() {
 		reviewerResp, err := client.PutOnly(fmt.Sprintf("2.0/repositories/%s/%s/default-reviewers/%s",
@@ -80,7 +80,7 @@ func resourceDefaultReviewersCreate(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceDefaultReviewersRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	owner, repo, err := defaultReviewersId(d.Id())
 	if err != nil {
@@ -135,7 +135,7 @@ func resourceDefaultReviewersRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDefaultReviewersUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	oraw, nraw := d.GetChange("reviewers")
 	o := oraw.(*schema.Set)
@@ -186,7 +186,7 @@ func resourceDefaultReviewersUpdate(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceDefaultReviewersDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	for _, user := range d.Get("reviewers").(*schema.Set).List() {
 		resp, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s/default-reviewers/%s",

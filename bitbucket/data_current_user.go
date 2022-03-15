@@ -81,7 +81,7 @@ func dataCurrentUser() *schema.Resource {
 }
 
 func dataReadCurrentUser(d *schema.ResourceData, m interface{}) error {
-	c := m.(*Client)
+	c := m.(Clients).httpClient
 
 	curUser, err := c.Get("2.0/user")
 	if err != nil {

@@ -98,7 +98,7 @@ func resourceWorkspaceHook() *schema.Resource {
 }
 
 func resourceWorkspaceHookCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	hook := createHook(d)
 
 	payload, err := json.Marshal(hook)
@@ -129,7 +129,7 @@ func resourceWorkspaceHookCreate(d *schema.ResourceData, m interface{}) error {
 	return resourceWorkspaceHookRead(d, m)
 }
 func resourceWorkspaceHookRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	hookReq, err := client.Get(fmt.Sprintf("2.0/workspaces/%s/hooks/%s",
 		d.Get("workspace").(string),
@@ -173,7 +173,7 @@ func resourceWorkspaceHookRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWorkspaceHookUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	hook := createHook(d)
 	payload, err := json.Marshal(hook)
 	if err != nil {
@@ -193,7 +193,7 @@ func resourceWorkspaceHookUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceWorkspaceHookDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	_, err := client.Delete(fmt.Sprintf("2.0/workspaces/%s/hooks/%s",
 		d.Get("workspace").(string),
 		url.PathEscape(d.Id()),

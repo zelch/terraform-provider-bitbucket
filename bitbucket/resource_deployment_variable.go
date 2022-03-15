@@ -79,7 +79,7 @@ func parseDeploymentId(str string) (repository string, deployment string) {
 
 func resourceDeploymentVariableCreate(d *schema.ResourceData, m interface{}) error {
 
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	rvcr := newDeploymentVariableFromResource(d)
 	bytedata, err := json.Marshal(rvcr)
 
@@ -117,7 +117,7 @@ func resourceDeploymentVariableCreate(d *schema.ResourceData, m interface{}) err
 func resourceDeploymentVariableRead(d *schema.ResourceData, m interface{}) error {
 
 	repository, deployment := parseDeploymentId(d.Get("deployment").(string))
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	rvReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables?pagelen=100",
 		repository,
 		deployment,
@@ -169,7 +169,7 @@ func resourceDeploymentVariableRead(d *schema.ResourceData, m interface{}) error
 }
 
 func resourceDeploymentVariableUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	rvcr := newDeploymentVariableFromResource(d)
 	bytedata, err := json.Marshal(rvcr)
 
@@ -196,7 +196,7 @@ func resourceDeploymentVariableUpdate(d *schema.ResourceData, m interface{}) err
 
 func resourceDeploymentVariableDelete(d *schema.ResourceData, m interface{}) error {
 	repository, deployment := parseDeploymentId(d.Get("deployment").(string))
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables/%s",
 		repository,
 		deployment,

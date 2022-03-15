@@ -37,7 +37,7 @@ func dataWorkspace() *schema.Resource {
 }
 
 func dataReadWorkspace(d *schema.ResourceData, m interface{}) error {
-	c := m.(*Client)
+	c := m.(Clients).httpClient
 
 	workspace := d.Get("workspace").(string)
 	workspaceReq, err := c.Get(fmt.Sprintf("2.0/workspaces/%s", workspace))

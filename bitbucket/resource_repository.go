@@ -180,7 +180,7 @@ func newRepositoryFromResource(d *schema.ResourceData) *Repository {
 }
 
 func resourceRepositoryUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	repository := newRepositoryFromResource(d)
 
 	var jsonbuffer []byte
@@ -224,7 +224,7 @@ func resourceRepositoryUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	repo := newRepositoryFromResource(d)
 
 	bytedata, err := json.Marshal(repo)
@@ -288,7 +288,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	owner := d.Get("owner").(string)
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	repoReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s", owner, repoSlug))
 
 	if repoReq.StatusCode == 404 {
@@ -377,7 +377,7 @@ func resourceRepositoryDelete(d *schema.ResourceData, m interface{}) error {
 		repoSlug = d.Get("name").(string)
 	}
 
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s", d.Get("owner").(string), repoSlug))
 
 	return err

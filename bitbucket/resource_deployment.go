@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"io/ioutil"
 	"log"
 	"net/url"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 // Deployment structure for handling key info
@@ -68,7 +69,7 @@ func newDeploymentFromResource(d *schema.ResourceData) *Deployment {
 
 func resourceDeploymentCreate(d *schema.ResourceData, m interface{}) error {
 
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	rvcr := newDeploymentFromResource(d)
 	bytedata, err := json.Marshal(rvcr)
 
@@ -102,7 +103,7 @@ func resourceDeploymentCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceDeploymentRead(d *schema.ResourceData, m interface{}) error {
 
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	req, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/environments/%s",
 		d.Get("repository").(string),
 		d.Get("uuid").(string),
@@ -136,7 +137,7 @@ func resourceDeploymentRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeploymentUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	rvcr := newDeploymentFromResource(d)
 	bytedata, err := json.Marshal(rvcr)
 
@@ -160,7 +161,7 @@ func resourceDeploymentUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeploymentDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/environments/%s",
 		d.Get("repository").(string),
 		d.Get("uuid").(string),

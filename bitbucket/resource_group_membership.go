@@ -48,7 +48,7 @@ func resourceGroupMembership() *schema.Resource {
 }
 
 func resourceGroupMembershipsPut(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace := d.Get("workspace").(string)
 	groupSlug := d.Get("group_slug").(string)
@@ -66,7 +66,7 @@ func resourceGroupMembershipsPut(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceGroupMembershipsRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, slug, uuid, err := groupMemberId(d.Id())
 	if err != nil {
@@ -127,7 +127,7 @@ func resourceGroupMembershipsRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceGroupMembershipsDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, slug, uuid, err := groupMemberId(d.Id())
 	if err != nil {
