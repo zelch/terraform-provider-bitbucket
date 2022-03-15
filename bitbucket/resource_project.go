@@ -118,7 +118,7 @@ func newProjectFromResource(d *schema.ResourceData) *Project {
 }
 
 func resourceProjectUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	project := newProjectFromResource(d)
 
 	var jsonbuffer []byte
@@ -146,7 +146,7 @@ func resourceProjectUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceProjectCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	project := newProjectFromResource(d)
 
 	bytedata, err := json.Marshal(project)
@@ -197,7 +197,7 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 		projectKey = d.Get("key").(string)
 	}
 
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	projectReq, _ := client.Get(fmt.Sprintf("2.0/workspaces/%s/projects/%s",
 		d.Get("owner").(string),
 		projectKey,
@@ -247,7 +247,7 @@ func resourceProjectDelete(d *schema.ResourceData, m interface{}) error {
 		projectKey = d.Get("key").(string)
 	}
 
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	_, err := client.Delete(fmt.Sprintf("2.0/workspaces/%s/projects/%s",
 		d.Get("owner").(string),
 		projectKey,

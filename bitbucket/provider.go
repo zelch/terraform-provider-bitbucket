@@ -1,10 +1,24 @@
 package bitbucket
 
 import (
+	"context"
+	"fmt"
+	"log"
 	"net/http"
 
+	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+type ProviderConfig struct {
+	ApiClient   *bitbucket.APIClient
+	AuthContext context.Context
+}
+
+type Clients struct {
+	genClient  ProviderConfig
+	httpClient Client
+}
 
 // Provider will create the necessary terraform provider to talk to the Bitbucket APIs you should
 // specify a USERNAME and PASSWORD or a OAUTH Token
@@ -65,24 +79,47 @@ func Provider() *schema.Provider {
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
+	authCtx := context.Background()
+
 	client := &Client{
 		HTTPClient: &http.Client{},
 	}
 
-	if v, ok := d.GetOk("username"); ok && v.(string) != "" {
-		user := v.(string)
-		client.Username = &user
-	}
+	if username, ok := d.GetOk("username"); ok {
+		var password interface{}
+		if password, ok = d.GetOk("password"); !ok {
+			return nil, fmt.Errorf("found username for basic auth, but password not specified")
+		}
+		log.Printf("[DEBUG] Using API Basic Auth")
 
-	if v, ok := d.GetOk("password"); ok && v.(string) != "" {
-		pass := v.(string)
+		user := username.(string)
+		pass := password.(string)
+
+		cred := bitbucket.BasicAuth{
+			UserName: user,
+			Password: pass,
+		}
+		authCtx = context.WithValue(authCtx, bitbucket.ContextBasicAuth, cred)
+		client.Username = &user
 		client.Password = &pass
 	}
 
 	if v, ok := d.GetOk("oauth_token"); ok && v.(string) != "" {
 		token := v.(string)
 		client.OAuthToken = &token
+		authCtx = context.WithValue(authCtx, bitbucket.ContextAccessToken, token)
 	}
 
-	return client, nil
+	conf := bitbucket.NewConfiguration()
+	apiClient := ProviderConfig{
+		ApiClient:   bitbucket.NewAPIClient(conf),
+		AuthContext: authCtx,
+	}
+
+	clients := Clients{
+		genClient:  apiClient,
+		httpClient: *client,
+	}
+
+	return clients, nil
 }

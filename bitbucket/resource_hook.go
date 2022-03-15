@@ -133,7 +133,7 @@ func createHook(d *schema.ResourceData) *Hook {
 }
 
 func resourceHookCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	hook := createHook(d)
 
 	payload, err := json.Marshal(hook)
@@ -165,7 +165,7 @@ func resourceHookCreate(d *schema.ResourceData, m interface{}) error {
 	return resourceHookRead(d, m)
 }
 func resourceHookRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	hookReq, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/hooks/%s",
 		d.Get("owner").(string),
@@ -210,7 +210,7 @@ func resourceHookRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceHookUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	hook := createHook(d)
 	payload, err := json.Marshal(hook)
 	if err != nil {
@@ -231,7 +231,7 @@ func resourceHookUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceHookDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/%s/hooks/%s",
 		d.Get("owner").(string),
 		d.Get("repository").(string),

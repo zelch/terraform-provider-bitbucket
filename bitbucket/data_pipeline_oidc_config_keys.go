@@ -28,7 +28,7 @@ func dataPipelineOidcConfigKeys() *schema.Resource {
 }
 
 func dataReadPipelineOidcConfigKeys(d *schema.ResourceData, m interface{}) error {
-	c := m.(*Client)
+	c := m.(Clients).httpClient
 
 	workspace := d.Get("workspace").(string)
 	req, err := c.Get(fmt.Sprintf("2.0/workspaces/%s/pipelines-config/identity/oidc/keys.json", workspace))

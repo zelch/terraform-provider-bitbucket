@@ -57,7 +57,7 @@ func resourceGroup() *schema.Resource {
 }
 
 func resourceGroupsCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	group := expandGroup(d)
 	log.Printf("[DEBUG] Group Request: %#v", group)
@@ -89,7 +89,7 @@ func resourceGroupsCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, slug, err := groupId(d.Id())
 	if err != nil {
@@ -133,7 +133,7 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceGroupsUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	group := expandGroup(d)
 	log.Printf("[DEBUG] Group Request: %#v", group)
@@ -154,7 +154,7 @@ func resourceGroupsUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceGroupsDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, slug, err := groupId(d.Id())
 	if err != nil {

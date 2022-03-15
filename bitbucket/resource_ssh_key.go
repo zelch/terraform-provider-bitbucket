@@ -58,7 +58,7 @@ func resourceSshKey() *schema.Resource {
 }
 
 func resourceSshKeysCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	sshKey := expandsshKey(d)
 	log.Printf("[DEBUG] SSH Key Request: %#v", sshKey)
@@ -91,7 +91,7 @@ func resourceSshKeysCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSshKeysRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	user, keyId, err := sshKeyId(d.Id())
 	if err != nil {
@@ -134,7 +134,7 @@ func resourceSshKeysRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSshKeysUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	sshKey := expandsshKey(d)
 	log.Printf("[DEBUG] SSH Key Request: %#v", sshKey)
@@ -155,7 +155,7 @@ func resourceSshKeysUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSshKeysDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	user, keyId, err := sshKeyId(d.Id())
 	if err != nil {

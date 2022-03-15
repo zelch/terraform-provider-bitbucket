@@ -85,7 +85,7 @@ func resourcePipelineSshKnownHost() *schema.Resource {
 }
 
 func resourcePipelineSshKnownHostsCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	pipeSshKnownHost := expandPipelineSshKnownHost(d)
 	log.Printf("[DEBUG] Pipeline Ssh Key Request: %#v", pipeSshKnownHost)
@@ -127,7 +127,7 @@ func resourcePipelineSshKnownHostsCreate(d *schema.ResourceData, m interface{}) 
 }
 
 func resourcePipelineSshKnownHostsUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, repo, uuid, err := pipeSshKnownHostId(d.Id())
 	if err != nil {
@@ -154,7 +154,7 @@ func resourcePipelineSshKnownHostsUpdate(d *schema.ResourceData, m interface{}) 
 }
 
 func resourcePipelineSshKnownHostsRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, repo, uuid, err := pipeSshKnownHostId(d.Id())
 	if err != nil {
@@ -198,7 +198,7 @@ func resourcePipelineSshKnownHostsRead(d *schema.ResourceData, m interface{}) er
 }
 
 func resourcePipelineSshKnownHostsDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, repo, uuid, err := pipeSshKnownHostId(d.Id())
 	if err != nil {

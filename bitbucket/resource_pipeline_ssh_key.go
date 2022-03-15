@@ -50,7 +50,7 @@ func resourcePipelineSshKey() *schema.Resource {
 }
 
 func resourcePipelineSshKeysPut(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	pipeSshKey := expandPipelineSshKey(d)
 	log.Printf("[DEBUG] Pipeline Ssh Key Request: %#v", pipeSshKey)
@@ -76,7 +76,7 @@ func resourcePipelineSshKeysPut(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourcePipelineSshKeysRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, repo, err := pipeSshKeyId(d.Id())
 	if err != nil {
@@ -118,7 +118,7 @@ func resourcePipelineSshKeysRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourcePipelineSshKeysDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, repo, err := pipeSshKeyId(d.Id())
 	if err != nil {

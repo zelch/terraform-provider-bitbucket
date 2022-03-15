@@ -1,21 +1,11 @@
 package bitbucket
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-type Workspace struct {
-	Slug      string `json:"slug"`
-	IsPrivate bool   `json:"is_private"`
-	Name      string `json:"name"`
-	UUID      string `json:"uuid"`
-}
 
 func dataWorkspace() *schema.Resource {
 	return &schema.Resource{
@@ -43,43 +33,29 @@ func dataWorkspace() *schema.Resource {
 }
 
 func dataReadWorkspace(d *schema.ResourceData, m interface{}) error {
-	c := m.(*Client)
+	c := m.(Clients).genClient
+
+	workspaceApi := c.ApiClient.WorkspacesApi
 
 	workspace := d.Get("workspace").(string)
-	workspaceReq, err := c.Get(fmt.Sprintf("2.0/workspaces/%s", workspace))
+	workspaceReq, res, err := workspaceApi.WorkspacesWorkspaceGet(c.AuthContext, workspace)
 	if err != nil {
 		return err
 	}
 
-	if workspaceReq.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("user not found")
+	if res.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("workspace not found")
 	}
 
-	if workspaceReq.StatusCode >= http.StatusInternalServerError {
-		return fmt.Errorf("internal server error fetching user")
+	if res.StatusCode >= http.StatusInternalServerError {
+		return fmt.Errorf("internal server error fetching workspace")
 	}
 
-	body, readerr := ioutil.ReadAll(workspaceReq.Body)
-	if readerr != nil {
-		return readerr
-	}
-
-	log.Printf("[DEBUG] Workspace Response JSON: %v", string(body))
-
-	var work Workspace
-
-	decodeerr := json.Unmarshal(body, &work)
-	if decodeerr != nil {
-		return decodeerr
-	}
-
-	log.Printf("[DEBUG] Workspace Response Decoded: %#v", work)
-
-	d.SetId(work.UUID)
+	d.SetId(workspaceReq.Uuid)
 	d.Set("workspace", workspace)
-	d.Set("name", work.Name)
-	d.Set("slug", work.Slug)
-	d.Set("is_private", work.IsPrivate)
+	d.Set("name", workspaceReq.Name)
+	d.Set("slug", workspaceReq.Slug)
+	d.Set("is_private", workspaceReq.IsPrivate)
 
 	return nil
 }

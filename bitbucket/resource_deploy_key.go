@@ -54,7 +54,7 @@ func resourceDeployKey() *schema.Resource {
 }
 
 func resourceDeployKeysCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	deployKey := expandsshKey(d)
 	log.Printf("[DEBUG] Deploy Key Request: %#v", deployKey)
@@ -94,7 +94,7 @@ func resourceDeployKeysCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeployKeysRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, repo, keyId, err := deployKeyId(d.Id())
 	if err != nil {
@@ -138,7 +138,7 @@ func resourceDeployKeysRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeployKeysUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	deployKey := expandsshKey(d)
 	log.Printf("[DEBUG] Deploy Key Request: %#v", deployKey)
@@ -164,7 +164,7 @@ func resourceDeployKeysUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeployKeysDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	workspace, repo, keyId, err := deployKeyId(d.Id())
 	if err != nil {

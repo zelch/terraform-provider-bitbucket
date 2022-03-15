@@ -85,7 +85,7 @@ func TestAccBitbucketDeployKey_label(t *testing.T) {
 }
 
 func testAccCheckBitbucketDeployKeyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Client)
+	client := testAccProvider.Meta().(Clients).httpClient
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_deploy_key" {
 			continue

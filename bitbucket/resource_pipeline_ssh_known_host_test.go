@@ -67,7 +67,7 @@ func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
 }
 
 func testAccCheckBitbucketPipelineSshKnownHostDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Client)
+	client := testAccProvider.Meta().(Clients).httpClient
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_pipeline_ssh_known_host" {
 			continue

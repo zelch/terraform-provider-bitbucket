@@ -62,7 +62,7 @@ func dataHookTypes() *schema.Resource {
 }
 
 func dataReadHookTypes(d *schema.ResourceData, m interface{}) error {
-	c := m.(*Client)
+	c := m.(Clients).httpClient
 
 	subjectType := d.Get("subject_type").(string)
 	hookTypes, err := c.Get(fmt.Sprintf("2.0/hook_events/%s", subjectType))

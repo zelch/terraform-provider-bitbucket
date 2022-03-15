@@ -106,7 +106,7 @@ resource "bitbucket_branch_restriction" "test" {
 }
 
 func testAccCheckBitbucketBranchRestrictionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Client)
+	client := testAccProvider.Meta().(Clients).httpClient
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_branch_restriction" {
 			continue

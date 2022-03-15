@@ -137,7 +137,7 @@ func resourceBranchingModel() *schema.Resource {
 }
 
 func resourceBranchingModelsPut(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 	branchingModel := expandBranchingModel(d)
 
 	log.Printf("[DEBUG] Branching Model Request: %#v", branchingModel)
@@ -172,7 +172,7 @@ func resourceBranchingModelsPut(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceBranchingModelsRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	owner, repo, err := branchingModelId(d.Id())
 	if err != nil {
@@ -215,7 +215,7 @@ func resourceBranchingModelsRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceBranchingModelsDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(*Client)
+	client := m.(Clients).httpClient
 
 	owner, repo, err := branchingModelId(d.Id())
 	if err != nil {
