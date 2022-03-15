@@ -81,32 +81,27 @@ func dataCurrentUser() *schema.Resource {
 }
 
 func dataReadCurrentUser(d *schema.ResourceData, m interface{}) error {
-	c := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	httpClient := m.(Clients).httpClient
+	usersApi := c.ApiClient.UsersApi
 
-	curUser, err := c.Get("2.0/user")
+	curUser, curUserRes, err := usersApi.UserGet(c.AuthContext)
 	if err != nil {
-		return err
+		return fmt.Errorf("error reading current user: %w", err)
 	}
 
-	if curUser.StatusCode == http.StatusNotFound {
+	if curUserRes.StatusCode == http.StatusNotFound {
 		return fmt.Errorf("user not found")
 	}
 
-	if curUser.StatusCode >= http.StatusInternalServerError {
+	if curUserRes.StatusCode >= http.StatusInternalServerError {
 		return fmt.Errorf("internal server error fetching user")
 	}
 
-	curUserEmails, err := c.Get("2.0/user/emails")
+	curUserEmails, err := httpClient.Get("2.0/user/emails")
 	if err != nil {
 		return err
 	}
-
-	body, readerr := ioutil.ReadAll(curUser.Body)
-	if readerr != nil {
-		return readerr
-	}
-
-	log.Printf("[DEBUG] Current User Response JSON: %v", string(body))
 
 	emailBody, readerr := ioutil.ReadAll(curUserEmails.Body)
 	if readerr != nil {
@@ -115,32 +110,23 @@ func dataReadCurrentUser(d *schema.ResourceData, m interface{}) error {
 
 	log.Printf("[DEBUG] Current User Emails Response JSON: %v", string(emailBody))
 
-	var u apiUser
-
-	decodeerr := json.Unmarshal(body, &u)
-	if decodeerr != nil {
-		return decodeerr
-	}
-
-	log.Printf("[DEBUG] Current User Response Decoded: %#v", u)
-
 	var emails PaginatedUserEmails
 
-	decodeerr = json.Unmarshal(emailBody, &emails)
+	decodeerr := json.Unmarshal(emailBody, &emails)
 	if decodeerr != nil {
 		return decodeerr
 	}
 
 	log.Printf("[DEBUG] Current User Emails Response Decoded: %#v", emails)
 
-	d.SetId(u.UUID)
-	d.Set("uuid", u.UUID)
-	d.Set("username", u.Username)
-	d.Set("nickname", u.Nickname)
-	d.Set("display_name", u.DisplayName)
-	d.Set("account_id", u.AccountId)
-	d.Set("account_status", u.AccountStatus)
-	d.Set("is_staff", u.IsStaff)
+	d.SetId(curUser.Uuid)
+	d.Set("uuid", curUser.Uuid)
+	d.Set("username", curUser.Username)
+	d.Set("nickname", curUser.Nickname)
+	d.Set("display_name", curUser.DisplayName)
+	d.Set("account_id", curUser.AccountId)
+	d.Set("account_status", curUser.AccountStatus)
+	d.Set("is_staff", curUser.IsStaff)
 	d.Set("email", flattenUserEmails(emails.Values))
 
 	return nil
