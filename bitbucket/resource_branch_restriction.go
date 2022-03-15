@@ -184,7 +184,6 @@ func createBranchRestriction(d *schema.ResourceData) *bitbucket.Branchrestrictio
 	}
 
 	return restict
-
 }
 
 func resourceBranchRestrictionsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
