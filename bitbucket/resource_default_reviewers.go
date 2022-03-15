@@ -55,27 +55,26 @@ func resourceDefaultReviewers() *schema.Resource {
 }
 
 func resourceDefaultReviewersCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
 
+	prApi := c.ApiClient.PullrequestsApi
+
+	repo := d.Get("repository").(string)
+	workspace := d.Get("owner").(string)
 	for _, user := range d.Get("reviewers").(*schema.Set).List() {
-		reviewerResp, err := client.PutOnly(fmt.Sprintf("2.0/repositories/%s/%s/default-reviewers/%s",
-			d.Get("owner").(string),
-			d.Get("repository").(string),
-			user,
-		))
+		userName := user.(string)
+		reviewerResp, err := prApi.RepositoriesWorkspaceRepoSlugDefaultReviewersTargetUsernamePut(c.AuthContext, repo, userName, workspace)
 
 		if err != nil {
 			return err
 		}
 
 		if reviewerResp.StatusCode != 200 {
-			return fmt.Errorf("failed to create reviewer %s got code %d", user.(string), reviewerResp.StatusCode)
+			return fmt.Errorf("failed to create reviewer %s got code %d", userName, reviewerResp.StatusCode)
 		}
-
-		defer reviewerResp.Body.Close()
 	}
 
-	d.SetId(fmt.Sprintf("%s/%s/reviewers", d.Get("owner").(string), d.Get("repository").(string)))
+	d.SetId(fmt.Sprintf("%s/%s/reviewers", workspace, repo))
 	return resourceDefaultReviewersRead(d, m)
 }
 

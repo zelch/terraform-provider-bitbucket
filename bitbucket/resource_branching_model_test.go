@@ -185,7 +185,7 @@ resource "bitbucket_branching_model" "test" {
 }
 
 func testAccCheckBitbucketBranchingModelDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Client)
+	client := testAccProvider.Meta().(Clients).httpClient
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_branching_model" {
 			continue

@@ -41,7 +41,7 @@ func TestAccBitbucketDeployment_basic(t *testing.T) {
 }
 
 func testAccCheckBitbucketDeploymentDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Client)
+	client := testAccProvider.Meta().(Clients).httpClient
 	rs, ok := s.RootModule().Resources["bitbucket_deployment.test_deploy"]
 	if !ok {
 		return fmt.Errorf("Not found %s", "bitbucket_deployment.test_deploy")

@@ -92,7 +92,7 @@ func TestAccBitbucketSshKey_label(t *testing.T) {
 }
 
 func testAccCheckBitbucketSshKeyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Client)
+	client := testAccProvider.Meta().(Clients).httpClient
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_ssh_key" {
 			continue

@@ -69,7 +69,7 @@ func TestAccBitbucketWorkspaceHook_basic(t *testing.T) {
 }
 
 func testAccCheckBitbucketWorkspaceHookDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Client)
+	client := testAccProvider.Meta().(Clients).httpClient
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_workspace_hook" {
 			continue
