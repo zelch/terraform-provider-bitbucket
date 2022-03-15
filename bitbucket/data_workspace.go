@@ -7,15 +7,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-type Workspace struct {
-	Slug      string `json:"slug"`
-	IsPrivate bool   `json:"is_private"`
-	Name      string `json:"name"`
-	UUID      string `json:"uuid"`
-}
 
 func dataWorkspace() *schema.Resource {
 	return &schema.Resource{
@@ -66,7 +60,7 @@ func dataReadWorkspace(d *schema.ResourceData, m interface{}) error {
 
 	log.Printf("[DEBUG] Workspace Response JSON: %v", string(body))
 
-	var work Workspace
+	var work bitbucket.Workspace
 
 	decodeerr := json.Unmarshal(body, &work)
 	if decodeerr != nil {
@@ -75,7 +69,7 @@ func dataReadWorkspace(d *schema.ResourceData, m interface{}) error {
 
 	log.Printf("[DEBUG] Workspace Response Decoded: %#v", work)
 
-	d.SetId(work.UUID)
+	d.SetId(work.Uuid)
 	d.Set("workspace", workspace)
 	d.Set("name", work.Name)
 	d.Set("slug", work.Slug)
