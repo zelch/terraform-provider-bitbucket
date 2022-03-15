@@ -2,7 +2,6 @@ package bitbucket
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"testing"
 
@@ -92,19 +91,21 @@ func TestAccBitbucketSshKey_label(t *testing.T) {
 }
 
 func testAccCheckBitbucketSshKeyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	client := testAccProvider.Meta().(Clients).genClient
+	sshApi := client.ApiClient.SshApi
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_ssh_key" {
 			continue
 		}
 
-		response, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/ssh_keys/%s", rs.Primary.Attributes["owner"], rs.Primary.Attributes["repository"], url.PathEscape(rs.Primary.Attributes["uuid"])))
-
-		if err == nil {
-			return fmt.Errorf("The resource was found should have errored")
+		user, keyId, err := sshKeyId(rs.Primary.ID)
+		if err != nil {
+			return err
 		}
 
-		if response.StatusCode != 404 {
+		_, res, _ := sshApi.UsersSelectedUserSshKeysKeyIdGet(client.AuthContext, keyId, user)
+		if res.StatusCode != 404 {
 			return fmt.Errorf("Ssh Key still exists")
 		}
 
