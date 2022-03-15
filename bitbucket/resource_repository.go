@@ -12,35 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-// PipelinesEnabled is the struct we send to turn on or turn off pipelines for a repository
-type PipelinesEnabled struct {
-	Enabled bool `json:"enabled"`
-}
-
-type RepoLinks struct {
-	Clone  []Link `json:"clone,omitempty"`
-	Avatar Link   `json:"avatar,omitempty"`
-}
-
-// Repository is the struct we need to send off to the Bitbucket API to create a repository
-type Repository struct {
-	SCM         string `json:"scm,omitempty"`
-	HasWiki     bool   `json:"has_wiki,omitempty"`
-	HasIssues   bool   `json:"has_issues,omitempty"`
-	Website     string `json:"website,omitempty"`
-	IsPrivate   bool   `json:"is_private,omitempty"`
-	ForkPolicy  string `json:"fork_policy,omitempty"`
-	Language    string `json:"language,omitempty"`
-	Description string `json:"description,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Slug        string `json:"slug,omitempty"`
-	UUID        string `json:"uuid,omitempty"`
-	Project     struct {
-		Key string `json:"key,omitempty"`
-	} `json:"project,omitempty"`
-	Links *RepoLinks `json:"links,omitempty"`
-}
-
 func resourceRepository() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceRepositoryCreate,

@@ -11,8 +11,6 @@ import (
 )
 
 func TestAccBitbucketRepository_basic(t *testing.T) {
-	var repo Repository
-
 	rName := acctest.RandomWithPrefix("tf-test")
 	testUser := os.Getenv("BITBUCKET_TEAM")
 	resourceName := "bitbucket_repository.test"
@@ -25,7 +23,7 @@ func TestAccBitbucketRepository_basic(t *testing.T) {
 			{
 				Config: testAccBitbucketRepoConfig(testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
+					testAccCheckBitbucketRepositoryExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", rName),
 					resource.TestCheckResourceAttr(resourceName, "owner", testUser),
 					resource.TestCheckResourceAttr(resourceName, "scm", "git"),
@@ -53,8 +51,6 @@ func TestAccBitbucketRepository_basic(t *testing.T) {
 }
 
 func TestAccBitbucketRepository_project(t *testing.T) {
-	var repo Repository
-
 	rName := acctest.RandomWithPrefix("tf-test")
 	testUser := os.Getenv("BITBUCKET_TEAM")
 	resourceName := "bitbucket_repository.test"
@@ -67,7 +63,7 @@ func TestAccBitbucketRepository_project(t *testing.T) {
 			{
 				Config: testAccBitbucketRepoProjectConfig(testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
+					testAccCheckBitbucketRepositoryExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", rName),
 					resource.TestCheckResourceAttr(resourceName, "owner", testUser),
 					resource.TestCheckResourceAttrPair(resourceName, "project_key", "bitbucket_project.test", "key"),
@@ -83,8 +79,6 @@ func TestAccBitbucketRepository_project(t *testing.T) {
 }
 
 func TestAccBitbucketRepository_avatar(t *testing.T) {
-	var repo Repository
-
 	rName := acctest.RandomWithPrefix("tf-test")
 	testUser := os.Getenv("BITBUCKET_TEAM")
 	resourceName := "bitbucket_repository.test"
@@ -97,7 +91,7 @@ func TestAccBitbucketRepository_avatar(t *testing.T) {
 			{
 				Config: testAccBitbucketRepoAvatarConfig(testUser, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
+					testAccCheckBitbucketRepositoryExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "link.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "link.0.avatar.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "link.0.avatar.0.href"),
@@ -113,8 +107,6 @@ func TestAccBitbucketRepository_avatar(t *testing.T) {
 }
 
 func TestAccBitbucketRepository_camelcase(t *testing.T) {
-	var repo Repository
-
 	rName := acctest.RandomWithPrefix("tf-test")
 	rName2 := acctest.RandomWithPrefix("tf-test-2")
 	testUser := os.Getenv("BITBUCKET_TEAM")
@@ -128,7 +120,7 @@ func TestAccBitbucketRepository_camelcase(t *testing.T) {
 			{
 				Config: testAccBitbucketRepoSlugConfig(testUser, rName, rName2),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryExists(resourceName, &repo),
+					testAccCheckBitbucketRepositoryExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", rName),
 					resource.TestCheckResourceAttr(resourceName, "owner", testUser),
 					resource.TestCheckResourceAttr(resourceName, "scm", "git"),
@@ -223,7 +215,7 @@ func testAccCheckBitbucketRepositoryDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccCheckBitbucketRepositoryExists(n string, repository *Repository) resource.TestCheckFunc {
+func testAccCheckBitbucketRepositoryExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
