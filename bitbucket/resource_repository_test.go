@@ -106,43 +106,6 @@ func TestAccBitbucketRepository_avatar(t *testing.T) {
 	})
 }
 
-func TestAccBitbucketRepository_camelcase(t *testing.T) {
-	rName := acctest.RandomWithPrefix("tf-test")
-	rName2 := acctest.RandomWithPrefix("tf-test-2")
-	testUser := os.Getenv("BITBUCKET_TEAM")
-	resourceName := "bitbucket_repository.test"
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckBitbucketRepositoryDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccBitbucketRepoSlugConfig(testUser, rName, rName2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "name", rName),
-					resource.TestCheckResourceAttr(resourceName, "owner", testUser),
-					resource.TestCheckResourceAttr(resourceName, "scm", "git"),
-					resource.TestCheckResourceAttr(resourceName, "has_wiki", "false"),
-					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
-					resource.TestCheckResourceAttr(resourceName, "fork_policy", "allow_forks"),
-					resource.TestCheckResourceAttr(resourceName, "language", ""),
-					resource.TestCheckResourceAttr(resourceName, "has_issues", "false"),
-					resource.TestCheckResourceAttr(resourceName, "slug", rName2),
-					resource.TestCheckResourceAttr(resourceName, "is_private", "true"),
-					resource.TestCheckResourceAttr(resourceName, "description", ""),
-				),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
 func testAccBitbucketRepoConfig(testUser, rName string) string {
 	return fmt.Sprintf(`
 resource "bitbucket_repository" "test" {

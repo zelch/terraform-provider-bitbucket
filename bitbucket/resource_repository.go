@@ -129,8 +129,7 @@ func resourceRepository() *schema.Resource {
 
 func newRepositoryFromResource(d *schema.ResourceData) *bitbucket.Repository {
 	repo := &bitbucket.Repository{
-		Name: d.Get("name").(string),
-		// Slug:        d.Get("slug").(string),
+		Name:        d.Get("name").(string),
 		Language:    d.Get("language").(string),
 		IsPrivate:   d.Get("is_private").(bool),
 		Description: d.Get("description").(string),
@@ -138,7 +137,6 @@ func newRepositoryFromResource(d *schema.ResourceData) *bitbucket.Repository {
 		HasWiki:     d.Get("has_wiki").(bool),
 		HasIssues:   d.Get("has_issues").(bool),
 		Scm:         d.Get("scm").(string),
-		// Website:     d.Get("website").(string),
 	}
 
 	if v, ok := d.GetOk("link"); ok && len(v.([]interface{})) > 0 && v.([]interface{}) != nil {
