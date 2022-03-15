@@ -1,13 +1,11 @@
 package bitbucket
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"strings"
 
+	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -85,49 +83,28 @@ func resourcePipelineSshKnownHost() *schema.Resource {
 }
 
 func resourcePipelineSshKnownHostsCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 
 	pipeSshKnownHost := expandPipelineSshKnownHost(d)
 	log.Printf("[DEBUG] Pipeline Ssh Key Request: %#v", pipeSshKnownHost)
-	bytedata, err := json.Marshal(pipeSshKnownHost)
-
-	if err != nil {
-		return err
-	}
 
 	repo := d.Get("repository").(string)
 	workspace := d.Get("workspace").(string)
-	resp, err := client.Post(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config/ssh/known_hosts/",
-		workspace, repo),
-		bytes.NewBuffer(bytedata))
+	host, _, err := pipeApi.CreateRepositoryPipelineKnownHost(c.AuthContext, *pipeSshKnownHost, workspace, repo)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating pipeline ssh known host: %w", err)
 	}
 
-	body, readerr := ioutil.ReadAll(resp.Body)
-	if readerr != nil {
-		return readerr
-	}
-
-	log.Printf("[DEBUG] Pipeline Ssh Known Hosts Response JSON: %v", string(body))
-
-	var host PiplineSshKnownHost
-
-	decodeerr := json.Unmarshal(body, &host)
-	if decodeerr != nil {
-		return decodeerr
-	}
-
-	log.Printf("[DEBUG] Pipeline Ssh Known Host Pages Response Decoded: %#v", host)
-
-	d.SetId(string(fmt.Sprintf("%s/%s/%s", workspace, repo, host.UUID)))
+	d.SetId(string(fmt.Sprintf("%s/%s/%s", workspace, repo, host.Uuid)))
 
 	return resourcePipelineSshKnownHostsRead(d, m)
 }
 
 func resourcePipelineSshKnownHostsUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 
 	workspace, repo, uuid, err := pipeSshKnownHostId(d.Id())
 	if err != nil {
@@ -136,77 +113,57 @@ func resourcePipelineSshKnownHostsUpdate(d *schema.ResourceData, m interface{}) 
 
 	pipeSshKnownHost := expandPipelineSshKnownHost(d)
 	log.Printf("[DEBUG] Pipeline Ssh Key Request: %#v", pipeSshKnownHost)
-	bytedata, err := json.Marshal(pipeSshKnownHost)
+	_, _, err = pipeApi.UpdateRepositoryPipelineKnownHost(c.AuthContext, *pipeSshKnownHost, workspace, repo, uuid)
 
 	if err != nil {
-		return err
-	}
-
-	_, err = client.Put(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config/ssh/known_hosts/%s",
-		workspace, repo, uuid),
-		bytes.NewBuffer(bytedata))
-
-	if err != nil {
-		return err
+		return fmt.Errorf("error updating pipeline ssh known host: %w", err)
 	}
 
 	return resourcePipelineSshKnownHostsRead(d, m)
 }
 
 func resourcePipelineSshKnownHostsRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 
 	workspace, repo, uuid, err := pipeSshKnownHostId(d.Id())
 	if err != nil {
 		return err
 	}
-	pipeSshKnownHostsReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config/ssh/known_hosts/%s",
-		workspace, repo, uuid))
 
-	if pipeSshKnownHostsReq.StatusCode == 404 {
+	host, res, err := pipeApi.GetRepositoryPipelineKnownHost(c.AuthContext, workspace, repo, uuid)
+	if err != nil {
+		return fmt.Errorf("error reading Pipeline Ssh Key (%s): %w", d.Id(), err)
+	}
+
+	if res.StatusCode == 404 {
 		log.Printf("[WARN] Pipeline Ssh Key (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
 	}
 
-	if pipeSshKnownHostsReq.Body == nil {
+	if res.Body == nil {
 		return fmt.Errorf("error getting Pipeline Ssh Key (%s): empty response", d.Id())
 	}
 
-	var pipeSshKnownHost *PiplineSshKnownHost
-	body, readerr := ioutil.ReadAll(pipeSshKnownHostsReq.Body)
-	if readerr != nil {
-		return readerr
-	}
-
-	log.Printf("[DEBUG] Pipeline Ssh Key Response JSON: %v", string(body))
-
-	decodeerr := json.Unmarshal(body, &pipeSshKnownHost)
-	if decodeerr != nil {
-		return decodeerr
-	}
-
-	log.Printf("[DEBUG] Pipeline Ssh Key Response Decoded: %#v", pipeSshKnownHost)
-
 	d.Set("repository", repo)
 	d.Set("workspace", workspace)
-	d.Set("hostname", pipeSshKnownHost.Hostname)
-	d.Set("uuid", pipeSshKnownHost.UUID)
-	d.Set("public_key", flattenPipelineSshKnownHost(pipeSshKnownHost.PublicKey))
+	d.Set("hostname", host.Hostname)
+	d.Set("uuid", host.Uuid)
+	d.Set("public_key", flattenPipelineSshKnownHost(host.PublicKey))
 
 	return nil
 }
 
 func resourcePipelineSshKnownHostsDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 
 	workspace, repo, uuid, err := pipeSshKnownHostId(d.Id())
 	if err != nil {
 		return err
 	}
-
-	_, err = client.Delete(fmt.Sprintf("2.0/repositories/%s/%s/pipelines_config/ssh/known_hosts/%s",
-		workspace, repo, uuid))
+	_, err = pipeApi.DeleteRepositoryPipelineKnownHost(c.AuthContext, workspace, repo, uuid)
 
 	if err != nil {
 		return fmt.Errorf("error deleting Pipeline Ssh Key (%s): %w", d.Id(), err)
@@ -215,8 +172,8 @@ func resourcePipelineSshKnownHostsDelete(d *schema.ResourceData, m interface{}) 
 	return err
 }
 
-func expandPipelineSshKnownHost(d *schema.ResourceData) *PiplineSshKnownHost {
-	key := &PiplineSshKnownHost{
+func expandPipelineSshKnownHost(d *schema.ResourceData) *bitbucket.PipelineKnownHost {
+	key := &bitbucket.PipelineKnownHost{
 		Hostname:  d.Get("hostname").(string),
 		PublicKey: expandPipelineSshKnownHostKey(d.Get("public_key").([]interface{})),
 	}
@@ -224,10 +181,10 @@ func expandPipelineSshKnownHost(d *schema.ResourceData) *PiplineSshKnownHost {
 	return key
 }
 
-func expandPipelineSshKnownHostKey(pubKey []interface{}) *PiplineSshKnownHostPublicKey {
+func expandPipelineSshKnownHostKey(pubKey []interface{}) *bitbucket.PipelineSshPublicKey {
 	tfMap, _ := pubKey[0].(map[string]interface{})
 
-	key := &PiplineSshKnownHostPublicKey{
+	key := &bitbucket.PipelineSshPublicKey{
 		KeyType: tfMap["key_type"].(string),
 		Key:     tfMap["key"].(string),
 	}
@@ -235,7 +192,7 @@ func expandPipelineSshKnownHostKey(pubKey []interface{}) *PiplineSshKnownHostPub
 	return key
 }
 
-func flattenPipelineSshKnownHost(rp *PiplineSshKnownHostPublicKey) []interface{} {
+func flattenPipelineSshKnownHost(rp *bitbucket.PipelineSshPublicKey) []interface{} {
 	if rp == nil {
 		return []interface{}{}
 	}
@@ -243,8 +200,8 @@ func flattenPipelineSshKnownHost(rp *PiplineSshKnownHostPublicKey) []interface{}
 	m := map[string]interface{}{
 		"key_type":           rp.KeyType,
 		"key":                rp.Key,
-		"md5_fingerprint":    rp.MD5Fingerprint,
-		"sha256_fingerprint": rp.SHA256Fingerprint,
+		"md5_fingerprint":    rp.Md5Fingerprint,
+		"sha256_fingerprint": rp.Sha256Fingerprint,
 	}
 
 	return []interface{}{m}

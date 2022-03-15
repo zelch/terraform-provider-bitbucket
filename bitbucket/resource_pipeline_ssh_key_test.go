@@ -11,7 +11,6 @@ import (
 )
 
 func TestAccBitbucketPipelineSshKey_basic(t *testing.T) {
-	var pipelineSshKey PiplineSshKey
 	resourceName := "bitbucket_pipeline_ssh_key.test"
 
 	rName := acctest.RandomWithPrefix("tf-test")
@@ -35,7 +34,7 @@ func TestAccBitbucketPipelineSshKey_basic(t *testing.T) {
 			{
 				Config: testAccBitbucketPipelineSshKeyConfig(owner, rName, publicKey, privateKey),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketPipelineSshKeyExists(resourceName, &pipelineSshKey),
+					testAccCheckBitbucketPipelineSshKeyExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "workspace", "bitbucket_repository.test", "owner"),
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "public_key", publicKey),
@@ -51,7 +50,7 @@ func TestAccBitbucketPipelineSshKey_basic(t *testing.T) {
 			{
 				Config: testAccBitbucketPipelineSshKeyConfig(owner, rName, publicKey2, privateKey2),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketPipelineSshKeyExists(resourceName, &pipelineSshKey),
+					testAccCheckBitbucketPipelineSshKeyExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "workspace", "bitbucket_repository.test", "owner"),
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "public_key", publicKey2),
@@ -89,7 +88,7 @@ func testAccCheckBitbucketPipelineSshKeyDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccCheckBitbucketPipelineSshKeyExists(n string, pipelineSshKey *PiplineSshKey) resource.TestCheckFunc {
+func testAccCheckBitbucketPipelineSshKeyExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
