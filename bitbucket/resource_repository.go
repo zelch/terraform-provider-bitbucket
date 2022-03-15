@@ -140,7 +140,7 @@ func newRepositoryFromResource(d *schema.ResourceData) *bitbucket.Repository {
 	}
 
 	if v, ok := d.GetOk("link"); ok && len(v.([]interface{})) > 0 && v.([]interface{}) != nil {
-		repo.Links = expandRepoLinks(v.([]interface{}))
+		repo.Links = expandLinks(v.([]interface{}))
 	}
 
 	if v, ok := d.GetOk("project_key"); ok && v.(string) != "" {
@@ -280,7 +280,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	d.Set("link", flattenRepoLinks(repoRes.Links))
+	d.Set("link", flattenLinks(repoRes.Links))
 
 	pipelinesConfigReq, res, err := pipeApi.GetRepositoryPipelineConfig(c.AuthContext, workspace, repoSlug)
 
@@ -319,7 +319,7 @@ func resourceRepositoryDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func expandRepoLinks(l []interface{}) *bitbucket.RepositoryLinks {
+func expandLinks(l []interface{}) *bitbucket.RepositoryLinks {
 	if len(l) == 0 || l[0] == nil {
 		return nil
 	}
@@ -333,25 +333,25 @@ func expandRepoLinks(l []interface{}) *bitbucket.RepositoryLinks {
 	rp := &bitbucket.RepositoryLinks{}
 
 	if v, ok := tfMap["avatar"].([]interface{}); ok && len(v) > 0 {
-		rp.Avatar = expandRepoLink(v)
+		rp.Avatar = expandLink(v)
 	}
 
 	return rp
 }
 
-func flattenRepoLinks(rp *bitbucket.RepositoryLinks) []interface{} {
+func flattenLinks(rp *bitbucket.RepositoryLinks) []interface{} {
 	if rp == nil {
 		return []interface{}{}
 	}
 
 	m := map[string]interface{}{
-		"avatar": flattenRepoLink(rp.Avatar),
+		"avatar": flattenLink(rp.Avatar),
 	}
 
 	return []interface{}{m}
 }
 
-func expandRepoLink(l []interface{}) *bitbucket.Link {
+func expandLink(l []interface{}) *bitbucket.Link {
 
 	tfMap, _ := l[0].(map[string]interface{})
 
@@ -364,7 +364,7 @@ func expandRepoLink(l []interface{}) *bitbucket.Link {
 	return rp
 }
 
-func flattenRepoLink(rp *bitbucket.Link) []interface{} {
+func flattenLink(rp *bitbucket.Link) []interface{} {
 	m := map[string]interface{}{
 		"href": rp.Href,
 	}
