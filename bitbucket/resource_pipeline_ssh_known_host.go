@@ -10,19 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-type PiplineSshKnownHost struct {
-	UUID      string                        `json:"uuid,omitempty"`
-	Hostname  string                        `json:"hostname,omitempty"`
-	PublicKey *PiplineSshKnownHostPublicKey `json:"public_key,omitempty"`
-}
-
-type PiplineSshKnownHostPublicKey struct {
-	KeyType           string `json:"key_type,omitempty"`
-	Key               string `json:"key,omitempty"`
-	MD5Fingerprint    string `json:"md5_fingerprint,omitempty"`
-	SHA256Fingerprint string `json:"sha256_fingerprint,omitempty"`
-}
-
 func resourcePipelineSshKnownHost() *schema.Resource {
 	return &schema.Resource{
 		Create: resourcePipelineSshKnownHostsCreate,
@@ -133,17 +120,17 @@ func resourcePipelineSshKnownHostsRead(d *schema.ResourceData, m interface{}) er
 
 	host, res, err := pipeApi.GetRepositoryPipelineKnownHost(c.AuthContext, workspace, repo, uuid)
 	if err != nil {
-		return fmt.Errorf("error reading Pipeline Ssh Key (%s): %w", d.Id(), err)
+		return fmt.Errorf("error reading Pipeline Ssh known host (%s): %w", d.Id(), err)
 	}
 
 	if res.StatusCode == 404 {
-		log.Printf("[WARN] Pipeline Ssh Key (%s) not found, removing from state", d.Id())
+		log.Printf("[WARN] Pipeline Ssh known host (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
 	}
 
 	if res.Body == nil {
-		return fmt.Errorf("error getting Pipeline Ssh Key (%s): empty response", d.Id())
+		return fmt.Errorf("error getting Pipeline Ssh known host (%s): empty response", d.Id())
 	}
 
 	d.Set("repository", repo)
@@ -166,7 +153,7 @@ func resourcePipelineSshKnownHostsDelete(d *schema.ResourceData, m interface{}) 
 	_, err = pipeApi.DeleteRepositoryPipelineKnownHost(c.AuthContext, workspace, repo, uuid)
 
 	if err != nil {
-		return fmt.Errorf("error deleting Pipeline Ssh Key (%s): %w", d.Id(), err)
+		return fmt.Errorf("error deleting Pipeline Ssh known host (%s): %w", d.Id(), err)
 	}
 
 	return err
