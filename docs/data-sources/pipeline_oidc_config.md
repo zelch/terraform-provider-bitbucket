@@ -8,7 +8,7 @@ description: |-
 
 # bitbucket\_user
 
-Provdes a way to fetch data on a pipeline OIDC Config.
+Provides a way to fetch data on a pipeline OIDC Config.
 
 ## Example Usage
 

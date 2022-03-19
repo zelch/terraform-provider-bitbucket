@@ -8,7 +8,7 @@ description: |-
 
 # bitbucket\_user
 
-Provdes a way to fetch data of the current user.
+Provides a way to fetch data of the current user.
 
 ## Example Usage
 

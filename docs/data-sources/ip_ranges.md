@@ -8,7 +8,7 @@ description: |-
 
 # bitbucket\_hook\_type
 
-Provdes a way to fetch IP Ranges for whitelisting.
+Provides a way to fetch IP Ranges for whitelisting.
 
 ## Example Usage
 
