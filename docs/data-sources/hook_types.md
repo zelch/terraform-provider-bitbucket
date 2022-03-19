@@ -8,7 +8,7 @@ description: |-
 
 # bitbucket\_hook\_type
 
-Provdes a way to fetch data of hook types.
+Provides a way to fetch data of hook types.
 
 ## Example Usage
 
