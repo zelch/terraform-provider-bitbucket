@@ -28,7 +28,7 @@ resource "bitbucket_pipeline_ssh_key" "test" {
 The following arguments are supported:
 
 * `workspace` - (Required) The Workspace where the repository resides.
-* `repository` - (Required) The Repository to create deploy key in.
+* `repository` - (Required) The Repository to create ssh key in.
 * `public_key` - (Required) The SSH public key value in OpenSSH format.
 * `private_key` - (Required) The SSH private key value in OpenSSH format.
 

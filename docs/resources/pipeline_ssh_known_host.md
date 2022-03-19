@@ -32,7 +32,7 @@ resource "bitbucket_pipeline_ssh_known_host" "test" {
 The following arguments are supported:
 
 * `workspace` - (Required) The Workspace where the repository resides.
-* `repository` - (Required) The Repository to create deploy key in.
+* `repository` - (Required) The Repository to create config for the known host in.
 * `hostname` - (Required) The hostname of the known host.
 * `public_key` - (Required) The Public key config for the known host.
 
