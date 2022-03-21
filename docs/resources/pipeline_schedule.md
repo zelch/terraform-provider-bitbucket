@@ -1,7 +1,7 @@
 ---
 layout: "bitbucket"
 page_title: "Bitbucket: bitbucket_pipeline_schedule"
-sidebar_current: "docs-bitbucket-resource-pipeline-ssh-schedule"
+sidebar_current: "docs-bitbucket-resource-pipeline-schedule"
 description: |-
   Provides a Bitbucket Pipeline Schedule
 ---
