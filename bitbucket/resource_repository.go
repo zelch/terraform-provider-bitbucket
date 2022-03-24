@@ -123,6 +123,23 @@ func resourceRepository() *schema.Resource {
 					},
 				},
 			},
+			"parent": {
+				Type: schema.TypeMap,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: func(val interface{}, key stirng) (warns []string, errs []error) {
+					v := val.(map[string]string)
+					if _, ok = v["slug"]; found == false {
+						errs = append(errs, fmt.Errorf("A repository 'slug' is required when specifying a parent to fork from."))
+					}
+					if _, ok = v["owner"]; found == false {
+						errs = append(errs, fmt.Errorf("A repository 'owner' is required when specifying a parent to fork from."))
+					}
+				},
+			},
 		},
 	}
 }
@@ -201,12 +218,28 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 		repoSlug = d.Get("name").(string)
 	}
 
-	repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPostOpts{
-		Body: optional.NewInterface(repo),
-	}
+	if v, ok := d.GetOk("parent"); ok {
+		parent := v.(map[string]interface{})
+		parentRepoSlug := parent["slug"].(string)
+		parentWorkspace := parent["owner"].(string)
+		parentRepo, _, err = repoApi.RepositoriesWorkspaceRepoSlugGet(
+			c.AuthContext, repoSlug, workspace,
+		)
+		if err != nil {
+			return fmt.Errorf("Error updating repository (%s) forked from (%s) : %w", repoSlug, parentRepoSlug, err)
+		}
+		repoBody := &bitbucket.RepositoriesWorkspaceRepoSlugForksPostOpts{
+			Body: optional.NewInterface(repo),
+		}
+		_, _, err := repoApi.RepositoriesWorkspaceRepoSlugForksPost(c.AuthContext, parentRepoSlug, parentWorkspace, repoBody)
+	} else {
+		repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPostOpts{
+			Body: optional.NewInterface(repo),
+		}
 
-	workspace := d.Get("owner").(string)
-	_, _, err := repoApi.RepositoriesWorkspaceRepoSlugPost(c.AuthContext, repoSlug, workspace, repoBody)
+		workspace := d.Get("owner").(string)
+		_, _, err := repoApi.RepositoriesWorkspaceRepoSlugPost(c.AuthContext, repoSlug, workspace, repoBody)
+	}
 
 	if err != nil {
 		return fmt.Errorf("error creating repository (%s): %w", repoSlug, err)
