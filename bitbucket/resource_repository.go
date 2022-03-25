@@ -222,16 +222,13 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 		parent := v.(map[string]interface{})
 		parentRepoSlug := parent["slug"].(string)
 		parentWorkspace := parent["owner"].(string)
-		parentRepo, _, err = repoApi.RepositoriesWorkspaceRepoSlugGet(
-			c.AuthContext, repoSlug, workspace,
-		)
-		if err != nil {
-			return fmt.Errorf("Error updating repository (%s) forked from (%s) : %w", repoSlug, parentRepoSlug, err)
-		}
 		repoBody := &bitbucket.RepositoriesWorkspaceRepoSlugForksPostOpts{
 			Body: optional.NewInterface(repo),
 		}
 		_, _, err := repoApi.RepositoriesWorkspaceRepoSlugForksPost(c.AuthContext, parentRepoSlug, parentWorkspace, repoBody)
+		if err != nil {
+			return fmt.Errorf("error creating repository (%s), forked from (%s): %w", repoSlug, parentRepoSlug, err)
+		}
 	} else {
 		repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPostOpts{
 			Body: optional.NewInterface(repo),
@@ -239,11 +236,11 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 
 		workspace := d.Get("owner").(string)
 		_, _, err := repoApi.RepositoriesWorkspaceRepoSlugPost(c.AuthContext, repoSlug, workspace, repoBody)
+		if err != nil {
+			return fmt.Errorf("error creating repository (%s): %w", repoSlug, err)
+		}
 	}
 
-	if err != nil {
-		return fmt.Errorf("error creating repository (%s): %w", repoSlug, err)
-	}
 	d.SetId(string(fmt.Sprintf("%s/%s", d.Get("owner").(string), repoSlug)))
 
 	pipelinesEnabled := d.Get("pipelines_enabled").(bool)
@@ -304,6 +301,13 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("description", repoRes.Description)
 	d.Set("project_key", repoRes.Project.Key)
 	d.Set("uuid", repoRes.Uuid)
+
+	if repoRes.Parent != nil {
+		parentMap = make(map[string]string)
+		parentMap["owner"] = repoRes.Parent.Workspace
+		parentMap["slug"] = repoRes.Parent.Name
+		d.Set("parent", parentMap)
+	}
 
 	for _, cloneURL := range repoRes.Links.Clone {
 		if cloneURL.Name == "https" {
