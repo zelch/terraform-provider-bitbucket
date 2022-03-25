@@ -55,6 +55,7 @@ The following arguments are supported:
 * `description` - (Optional) What the description of the repo is.
 * `pipelines_enabled` - (Optional) Turn on to enable pipelines support.
 * `link` - (Optional) A set of links to a resource related to this object. See [Link](#link) Below.
+* `parent` - (Optional) Create a repository by Forking it's parent See [Parent](#parent) below.
 
 ### Link
 
@@ -63,6 +64,13 @@ The following arguments are supported:
 #### Avatar
 
 * `href` - (Optional) href of the avatar.
+
+### Parent
+
+* `owner` - The owner of the repository we are forking from. Can be you or any other team you
+  have write access to.
+* `slug` - The slug of the parent repository. Found in the URL, typically this is the repository
+  name, all lowercase.
 
 ## Attributes Reference
 
