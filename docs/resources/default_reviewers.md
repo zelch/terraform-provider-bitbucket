@@ -36,7 +36,7 @@ The following arguments are supported:
 
 ## Import
 
-Default Revieers can be imported using the owner and repo separated by a (`/`) and the string `reviewers` and the end, e.g.,
+Default Reviewers can be imported using the owner and repo separated by a (`/`) and the string `reviewers` and the end, e.g.,
 
 ```sh
 terraform import bitbucket_repository.example myteam/terraform-code/reviewers

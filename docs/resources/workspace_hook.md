@@ -34,7 +34,7 @@ The following arguments are supported:
   have write access to.
 * `url` - (Required) Where to POST to.
 * `description` - (Required) The name / description to show in the UI.
-* `events` - (Required) The events this webhook is subscribed to. Valid values can be found at [Bitbucket Webhhok Docs](https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-post).
+* `events` - (Required) The events this webhook is subscribed to. Valid values can be found at [Bitbucket Webhook Docs](https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-post).
 
 ## Import
 
