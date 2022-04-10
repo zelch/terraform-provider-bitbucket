@@ -11,27 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-// Project is the project data we need to send to create a project on the bitbucket api
-type Project struct {
-	Key                     string        `json:"key,omitempty"`
-	IsPrivate               bool          `json:"is_private,omitempty"`
-	Owner                   string        `json:"owner.username,omitempty"`
-	Description             string        `json:"description,omitempty"`
-	Name                    string        `json:"name,omitempty"`
-	UUID                    string        `json:"uuid,omitempty"`
-	HasPubliclyVisibleRepos bool          `json:"has_publicly_visible_repos,omitempty"`
-	ProjectLinks            *ProjectLinks `json:"links,omitempty"`
-}
-
-type ProjectLinks struct {
-	Avatar Link `json:"avatar,omitempty"`
-}
-
-type Link struct {
-	Href string `json:"href,omitempty"`
-	Name string `json:"name,omitempty"`
-}
-
 func resourceProject() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceProjectCreate,
