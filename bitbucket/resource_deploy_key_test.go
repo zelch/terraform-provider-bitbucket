@@ -86,7 +86,9 @@ func TestAccBitbucketDeployKey_label(t *testing.T) {
 }
 
 func testAccCheckBitbucketDeployKeyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	c := testAccProvider.Meta().(Clients).genClient
+	deployApi := c.ApiClient.DeploymentsApi
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_deploy_key" {
 			continue
@@ -97,8 +99,7 @@ func testAccCheckBitbucketDeployKeyDestroy(s *terraform.State) error {
 			return err
 		}
 
-		response, err := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/deploy-keys/%s",
-			workspace, repo, keyId))
+		_, response, err := deployApi.RepositoriesWorkspaceRepoSlugDeployKeysKeyIdGet(c.AuthContext, keyId, repo, workspace)
 
 		if err == nil {
 			return fmt.Errorf("The resource was found should have errored")
