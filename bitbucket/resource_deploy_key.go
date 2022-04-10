@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -102,7 +103,7 @@ func resourceDeployKeysRead(d *schema.ResourceData, m interface{}) error {
 	}
 	deployKeysReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/deploy-keys/%s", workspace, repo, keyId))
 
-	if deployKeysReq.StatusCode == 404 {
+	if deployKeysReq.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Deploy Key (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil

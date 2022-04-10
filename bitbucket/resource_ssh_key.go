@@ -3,6 +3,7 @@ package bitbucket
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/DrFaust92/bitbucket-go-client"
@@ -91,7 +92,7 @@ func resourceSshKeysRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("error reading ssh key (%s): %w", d.Id(), err)
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] SSH Key (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
@@ -144,7 +145,7 @@ func resourceSshKeysDelete(d *schema.ResourceData, m interface{}) error {
 
 	res, err := sshApi.UsersSelectedUserSshKeysKeyIdDelete(c.AuthContext, keyId, user)
 	if err != nil {
-		if res.StatusCode == 404 {
+		if res.StatusCode == http.StatusNotFound {
 			return nil
 		}
 		return fmt.Errorf("error deleting ssh key (%s): %w", d.Id(), err)

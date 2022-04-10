@@ -3,6 +3,7 @@ package bitbucket
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/DrFaust92/bitbucket-go-client"
@@ -123,7 +124,7 @@ func resourcePipelineSshKnownHostsRead(d *schema.ResourceData, m interface{}) er
 		return fmt.Errorf("error reading Pipeline Ssh known host (%s): %w", d.Id(), err)
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Pipeline Ssh known host (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil

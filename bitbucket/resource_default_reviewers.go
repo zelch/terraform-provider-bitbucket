@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -91,7 +92,7 @@ func resourceDefaultReviewersRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Default Reviewers (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil

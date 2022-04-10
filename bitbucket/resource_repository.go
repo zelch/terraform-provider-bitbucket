@@ -3,6 +3,7 @@ package bitbucket
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"strings"
 
@@ -253,7 +254,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("error reading repository (%s): %w", d.Id(), err)
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Repository (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
@@ -284,13 +285,13 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 
 	pipelinesConfigReq, res, err := pipeApi.GetRepositoryPipelineConfig(c.AuthContext, workspace, repoSlug)
 
-	if err != nil && res.StatusCode != 404 {
+	if err != nil && res.StatusCode != http.StatusNotFound {
 		return err
 	}
 
 	if res.StatusCode == 200 {
 		d.Set("pipelines_enabled", pipelinesConfigReq.Enabled)
-	} else if res.StatusCode == 404 {
+	} else if res.StatusCode == http.StatusNotFound {
 		d.Set("pipelines_enabled", false)
 	}
 
@@ -310,7 +311,7 @@ func resourceRepositoryDelete(d *schema.ResourceData, m interface{}) error {
 
 	res, err := repoApi.RepositoriesWorkspaceRepoSlugDelete(c.AuthContext, repoSlug, d.Get("owner").(string), nil)
 	if err != nil {
-		if res.StatusCode == 404 {
+		if res.StatusCode == http.StatusNotFound {
 			return nil
 		}
 		return fmt.Errorf("error deleting repository (%s): %w", d.Id(), err)

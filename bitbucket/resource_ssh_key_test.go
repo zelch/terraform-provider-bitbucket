@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -105,7 +106,7 @@ func testAccCheckBitbucketSshKeyDestroy(s *terraform.State) error {
 		}
 
 		_, res, _ := sshApi.UsersSelectedUserSshKeysKeyIdGet(client.AuthContext, keyId, user)
-		if res.StatusCode != 404 {
+		if res.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("Ssh Key still exists")
 		}
 

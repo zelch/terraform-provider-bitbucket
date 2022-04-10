@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"testing"
@@ -120,7 +121,7 @@ func testAccCheckBitbucketBranchRestrictionDestroy(s *terraform.State) error {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if res.StatusCode != 404 {
+		if res.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("BranchRestriction still exists")
 		}
 	}

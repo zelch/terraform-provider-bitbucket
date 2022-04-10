@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -160,7 +161,7 @@ func resourceDeploymentVariableRead(d *schema.ResourceData, m interface{}) error
 		d.SetId("")
 	}
 
-	if rvReq.StatusCode == 404 {
+	if rvReq.StatusCode == http.StatusNotFound {
 		d.SetId("")
 		return nil
 	}

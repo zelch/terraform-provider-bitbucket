@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -171,7 +172,7 @@ func testAccCheckBitbucketRepositoryDestroy(s *terraform.State) error {
 			return fmt.Errorf("The repository was found should have errored")
 		}
 
-		if res.StatusCode != 404 {
+		if res.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("Repository still exists")
 		}
 	}

@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -49,7 +50,7 @@ func testAccCheckBitbucketDeploymentDestroy(s *terraform.State) error {
 
 	response, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s", rs.Primary.Attributes["owner"], rs.Primary.Attributes["name"]))
 
-	if response.StatusCode != 404 {
+	if response.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("Deployment still exists")
 	}
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -98,7 +99,7 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 
 	groupsReq, _ := client.Get(fmt.Sprintf("1.0/groups/%s/%s", workspace, slug))
 
-	if groupsReq.StatusCode == 404 {
+	if groupsReq.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Group (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil

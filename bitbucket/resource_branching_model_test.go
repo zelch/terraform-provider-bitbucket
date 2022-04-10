@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -196,7 +197,7 @@ func testAccCheckBitbucketBranchingModelDestroy(s *terraform.State) error {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if response.StatusCode != 404 {
+		if response.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("Branching Model still exists")
 		}
 	}
