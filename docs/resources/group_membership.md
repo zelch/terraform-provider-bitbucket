@@ -43,7 +43,7 @@ The following arguments are supported:
 
 ## Import
 
-Group Memberss can be imported using their `workspace/group-slug/member-uuid` ID, e.g.
+Group Members can be imported using their `workspace/group-slug/member-uuid` ID, e.g.
 
 ```sh
 terraform import bitbucket_group_membership.group my-workspace/group-slug/member-uuid
