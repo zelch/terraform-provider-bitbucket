@@ -47,7 +47,7 @@ func resourceDeployKey() *schema.Resource {
 				Computed: true,
 			},
 			"key_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 		},
@@ -95,45 +95,33 @@ func resourceDeployKeysCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeployKeysRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	deployApi := c.ApiClient.DeploymentsApi
 
 	workspace, repo, keyId, err := deployKeyId(d.Id())
 	if err != nil {
 		return err
 	}
-	deployKeysReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/deploy-keys/%s", workspace, repo, keyId))
 
-	if deployKeysReq.StatusCode == http.StatusNotFound {
+	deployKey, deployKeyRes, err := deployApi.RepositoriesWorkspaceRepoSlugDeployKeysKeyIdGet(c.AuthContext, keyId, repo, workspace)
+	if err != nil {
+		return fmt.Errorf("error reading Deploy Key (%s): %w", d.Id(), err)
+	}
+
+	if deployKeyRes.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Deploy Key (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
 	}
 
-	if deployKeysReq.Body == nil {
-		return fmt.Errorf("error getting Deploy Key (%s): empty response", d.Id())
-	}
-
-	var deployKey *SshKey
-	body, readerr := ioutil.ReadAll(deployKeysReq.Body)
-	if readerr != nil {
-		return readerr
-	}
-
-	log.Printf("[DEBUG] Deploy Key Response JSON: %v", string(body))
-
-	decodeerr := json.Unmarshal(body, &deployKey)
-	if decodeerr != nil {
-		return decodeerr
-	}
-
-	log.Printf("[DEBUG] Deploy Key Response Decoded: %#v", deployKey)
+	log.Printf("[DEBUG] Deploy Key Response: %#v", deployKey)
 
 	d.Set("repository", repo)
 	d.Set("workspace", workspace)
 	d.Set("key", d.Get("key").(string))
 	d.Set("label", deployKey.Label)
 	d.Set("comment", deployKey.Comment)
-	d.Set("key_id", deployKey.ID)
+	d.Set("key_id", keyId)
 
 	return nil
 }
@@ -165,15 +153,15 @@ func resourceDeployKeysUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeployKeysDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	deployApi := c.ApiClient.DeploymentsApi
 
 	workspace, repo, keyId, err := deployKeyId(d.Id())
 	if err != nil {
 		return err
 	}
 
-	_, err = client.Delete(fmt.Sprintf("2.0/repositories/%s/%s/deploy-keys/%s", workspace, repo, keyId))
-
+	_, err = deployApi.RepositoriesWorkspaceRepoSlugDeployKeysKeyIdDelete(c.AuthContext, keyId, repo, workspace)
 	if err != nil {
 		return fmt.Errorf("error deleting Deploy Key (%s): %w", d.Id(), err)
 	}
