@@ -14,7 +14,7 @@ Provides support for setting up default reviewers for your repository. You must 
 
 ```hcl
 data "bitbucket_user" "reviewer" {
-  username = "gob"
+  account_id = "gob"
 }
 
 resource "bitbucket_default_reviewers" "infrastructure" {
