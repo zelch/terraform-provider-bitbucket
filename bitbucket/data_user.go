@@ -1,22 +1,13 @@
 package bitbucket
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
-
-type apiUser struct {
-	Username      string `json:"username,omitempty"`
-	DisplayName   string `json:"display_name"`
-	UUID          string `json:"uuid"`
-	Nickname      string `json:"nickname"`
-	AccountId     string `json:"account_id"`
-	AccountStatus string `json:"account_status"`
-	IsStaff       bool   `json:"is_staff"`
-}
 
 func dataUser() *schema.Resource {
 	return &schema.Resource{
@@ -25,23 +16,25 @@ func dataUser() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"username": {
 				Type:     schema.TypeString,
-				Required: true,
+				Computed: true,
 			},
 			"display_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"uuid": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 			"nickname": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"account_id": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 			"account_status": {
 				Type:     schema.TypeString,
@@ -56,40 +49,41 @@ func dataUser() *schema.Resource {
 }
 
 func dataReadUser(d *schema.ResourceData, m interface{}) error {
-	c := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	usersApi := c.ApiClient.UsersApi
+	var selectedUser string
 
-	username := d.Get("username")
-	if username == "" {
-		return fmt.Errorf("username must not be blank")
+	if v, ok := d.GetOk("account_id"); ok && v.(string) != "" {
+		selectedUser = v.(string)
 	}
 
-	r, err := c.Get(fmt.Sprintf("2.0/users/%s", username))
+	if v, ok := d.GetOk("uuid"); ok && v.(string) != "" {
+		selectedUser = v.(string)
+	}
+
+	user, userRes, err := usersApi.UsersSelectedUserGet(c.AuthContext, selectedUser)
 	if err != nil {
-		return err
+		return fmt.Errorf("error reading User (%s): %w", selectedUser, err)
 	}
 
-	if r.StatusCode == http.StatusNotFound {
+	if userRes.StatusCode == http.StatusNotFound {
 		return fmt.Errorf("user not found")
 	}
 
-	if r.StatusCode >= http.StatusInternalServerError {
+	if userRes.StatusCode >= http.StatusInternalServerError {
 		return fmt.Errorf("internal server error fetching user")
 	}
 
-	var u apiUser
+	log.Printf("[DEBUG] User: %#v", user)
 
-	err = json.NewDecoder(r.Body).Decode(&u)
-	if err != nil {
-		return err
-	}
-
-	d.SetId(u.UUID)
-	d.Set("uuid", u.UUID)
-	d.Set("nickname", u.Nickname)
-	d.Set("display_name", u.DisplayName)
-	d.Set("account_id", u.AccountId)
-	d.Set("account_status", u.AccountStatus)
-	d.Set("is_staff", u.IsStaff)
+	d.SetId(user.Uuid)
+	d.Set("uuid", user.Uuid)
+	d.Set("nickname", user.Nickname)
+	d.Set("username", user.Username)
+	d.Set("display_name", user.DisplayName)
+	d.Set("account_id", user.AccountId)
+	d.Set("account_status", user.AccountStatus)
+	d.Set("is_staff", user.IsStaff)
 
 	return nil
 }
