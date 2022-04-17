@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -46,18 +45,6 @@ func dataReadGroup(d *schema.ResourceData, m interface{}) error {
 	slug := d.Get("slug").(string)
 
 	groupsReq, _ := client.Get(fmt.Sprintf("1.0/groups/%s/%s", workspace, slug))
-
-	if groupsReq.StatusCode == http.StatusNotFound {
-		log.Printf("[WARN] Group (%s) not found, removing from state", d.Id())
-		d.SetId("")
-		return nil
-	}
-
-	if groupsReq.StatusCode == http.StatusNotFound {
-		log.Printf("[WARN] Group (%s) not found, removing from state", d.Id())
-		d.SetId("")
-		return nil
-	}
 
 	if groupsReq.Body == nil {
 		return fmt.Errorf("error reading Group (%s): empty response", d.Id())
