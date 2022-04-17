@@ -69,6 +69,7 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"bitbucket_group":                     dataGroup(),
 			"bitbucket_groups":                    dataGroups(),
+			"bitbucket_group_members":             dataGroupMembers(),
 			"bitbucket_ip_ranges":                 dataIPRanges(),
 			"bitbucket_pipeline_oidc_config":      dataPipelineOidcConfig(),
 			"bitbucket_pipeline_oidc_config_keys": dataPipelineOidcConfigKeys(),
