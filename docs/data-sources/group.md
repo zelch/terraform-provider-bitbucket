@@ -31,3 +31,4 @@ The following arguments are supported:
 * `name` - The name of the group.
 * `auto_add` - Whether to automatically add users the group
 * `permission` - One of `read`, `write`, and `admin`.
+* `email_forwarding_disabled` - Whether to disable email forwarding for group.

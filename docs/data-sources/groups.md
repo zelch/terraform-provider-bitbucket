@@ -34,3 +34,4 @@ The following arguments are supported:
 * `auto_add` - Whether to automatically add users the groups
 * `permission` - One of `read`, `write`, and `admin`.
 * `slug` - The groups's slug.
+* `email_forwarding_disabled` - Whether to disable email forwarding for group.
