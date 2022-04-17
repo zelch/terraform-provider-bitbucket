@@ -3,11 +3,14 @@ package bitbucket
 import (
 	"fmt"
 	"log"
-
+	"regexp"
 	"strings"
+	"time"
+
 
 	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/antihax/optional"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -21,7 +24,6 @@ func resourceRepository() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"scm": {
 				Type:         schema.TypeString,
@@ -92,6 +94,12 @@ func resourceRepository() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if computeSlug(old) == computeSlug(new) {
+						return true
+					}
+					return false
+				},
 			},
 			"uuid": {
 				Type:     schema.TypeString,
@@ -130,16 +138,20 @@ func resourceRepository() *schema.Resource {
 				},
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: func(val interface{}, key stirng) (warns []string, errs []error) {
-					v := val.(map[string]string)
-					if _, ok = v["slug"]; found == false {
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(map[string]interface{})
+					if _, ok := v["slug"]; ok == false {
 						errs = append(errs, fmt.Errorf("A repository 'slug' is required when specifying a parent to fork from."))
 					}
-					if _, ok = v["owner"]; found == false {
+					if _, ok := v["owner"]; ok == false {
 						errs = append(errs, fmt.Errorf("A repository 'owner' is required when specifying a parent to fork from."))
 					}
+					return warns, errs
 				},
 			},
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(60 * time.Second),
 		},
 	}
 }
@@ -170,6 +182,46 @@ func newRepositoryFromResource(d *schema.ResourceData) *bitbucket.Repository {
 	return repo
 }
 
+type forkWorkspace struct {
+	Slug string `json:"slug,omitempty"`
+}
+
+type forkedRepositoryBody struct {
+	Name string `json:"name,omitempty"`
+	Language string `json:"language,omitempty"`
+	IsPrivate bool `json:"is_private,omitempty"`
+	Description string `json:"description,omitempty"`
+	ForkPolicy string `json:"fork_policy,omitempty"`
+	HasWiki bool `json:"has_wiki,omitempty"`
+	HasIssues bool `json:"has_issues,omitempty"`
+	Links *bitbucket.RepositoryLinks `json:"links,omitempty"`
+	Project *bitbucket.Project `json:"project,omitempty"`
+	Workspace *forkWorkspace `json:"workspace,omitempty"`
+}
+
+func createForkedRepositoryFromRepository(repo *bitbucket.Repository, targetWorkspaceSlug string) *forkedRepositoryBody{
+	forkedRepo := &forkedRepositoryBody{
+		Name: repo.Name,
+		Language: repo.Language,
+		IsPrivate: repo.IsPrivate,
+		Description: repo.Description,
+		ForkPolicy: repo.ForkPolicy,
+		HasWiki: repo.HasWiki,
+		HasIssues: repo.HasIssues,
+	}
+	workspace := &forkWorkspace{
+		Slug: targetWorkspaceSlug,
+	}
+	forkedRepo.Workspace = workspace
+	if repo.Links != nil {
+		forkedRepo.Links = repo.Links
+	}
+	if repo.Project != nil {
+		forkedRepo.Project = repo.Project
+	}
+	return forkedRepo
+}
+
 func resourceRepositoryUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(Clients).genClient
 	repoApi := c.ApiClient.RepositoriesApi
@@ -182,7 +234,7 @@ func resourceRepositoryUpdate(d *schema.ResourceData, m interface{}) error {
 	if repoSlug == "" {
 		repoSlug = d.Get("name").(string)
 	}
-
+	repoSlug = computeSlug(repoSlug)
 	repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPutOpts{
 		Body: optional.NewInterface(repository),
 	}
@@ -217,24 +269,34 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 	if repoSlug == "" {
 		repoSlug = d.Get("name").(string)
 	}
+	repoSlug = computeSlug(repoSlug)
 
+	workspace := d.Get("owner").(string)
 	if v, ok := d.GetOk("parent"); ok {
 		parent := v.(map[string]interface{})
 		parentRepoSlug := parent["slug"].(string)
 		parentWorkspace := parent["owner"].(string)
-		repoBody := &bitbucket.RepositoriesWorkspaceRepoSlugForksPostOpts{
-			Body: optional.NewInterface(repo),
-		}
-		_, _, err := repoApi.RepositoriesWorkspaceRepoSlugForksPost(c.AuthContext, parentRepoSlug, parentWorkspace, repoBody)
+		parentRepo, _, err := repoApi.RepositoriesWorkspaceRepoSlugGet(c.AuthContext, parentRepoSlug, parentWorkspace)
 		if err != nil {
-			return fmt.Errorf("error creating repository (%s), forked from (%s): %w", repoSlug, parentRepoSlug, err)
+			return fmt.Errorf("error creating repository (%s) forked from (%s): %w", repoSlug, parentRepoSlug, err)
+		}
+		if parentRepo.Scm != repo.Scm {
+			return fmt.Errorf("error creating repository (%s) forked from (%s): Differing version control systems")
+		}
+		requestRepo := createForkedRepositoryFromRepository(repo, workspace)
+		repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugForksPostOpts{
+			Body: optional.NewInterface(requestRepo),
+		}
+		_, _, err = repoApi.RepositoriesWorkspaceRepoSlugForksPost(c.AuthContext, parentRepoSlug, parentWorkspace, repoBody)
+		if err != nil {
+			swaggerErr := err.(bitbucket.GenericSwaggerError)
+			return fmt.Errorf("error forking repository (%s) from (%s): %v", repoSlug, parentRepoSlug, string(swaggerErr.Body()))
 		}
 	} else {
 		repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPostOpts{
 			Body: optional.NewInterface(repo),
 		}
 
-		workspace := d.Get("owner").(string)
 		_, _, err := repoApi.RepositoriesWorkspaceRepoSlugPost(c.AuthContext, repoSlug, workspace, repoBody)
 		if err != nil {
 			return fmt.Errorf("error creating repository (%s): %w", repoSlug, err)
@@ -246,10 +308,20 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 	pipelinesEnabled := d.Get("pipelines_enabled").(bool)
 	pipelinesConfig := &bitbucket.PipelinesConfig{Enabled: pipelinesEnabled}
 
-	_, _, err = pipeApi.UpdateRepositoryPipelineConfig(c.AuthContext, *pipelinesConfig, workspace, repoSlug)
-
-	if err != nil {
-		return fmt.Errorf("error enabling pipeline for repository (%s): %w", repoSlug, err)
+	retryErr := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	    _, pipelineResponse, err := pipeApi.UpdateRepositoryPipelineConfig(c.AuthContext, *pipelinesConfig, workspace, repoSlug)
+	    if pipelineResponse.StatusCode == 403 || pipelineResponse.StatusCode == 404 {
+	        return resource.RetryableError(
+	            fmt.Errorf("Permissions error setting Pipelines config, retrying..."),
+	        )
+	    }
+	    if err != nil {
+	        return resource.NonRetryableError(fmt.Errorf("unexpected error enabling pipeline for repository (%s): %w", repoSlug, err),)
+	    }
+	    return nil
+	})
+	if retryErr != nil {
+	    return retryErr
 	}
 
 	return resourceRepositoryRead(d, m)
@@ -272,6 +344,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 	if repoSlug == "" {
 		repoSlug = d.Get("name").(string)
 	}
+	repoSlug = computeSlug(repoSlug)
 
 	workspace := d.Get("owner").(string)
 	c := m.(Clients).genClient
@@ -303,9 +376,13 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("uuid", repoRes.Uuid)
 
 	if repoRes.Parent != nil {
-		parentMap = make(map[string]string)
-		parentMap["owner"] = repoRes.Parent.Workspace
-		parentMap["slug"] = repoRes.Parent.Name
+		parentMap := make(map[string]string)
+		parentOwner, parentSlug, splitErr := splitFullName(repoRes.Parent.FullName)
+		if splitErr != nil {
+			return fmt.Errorf("error reading forked repository (%s)", d.Get("name").(string))
+		}
+		parentMap["owner"] = parentOwner
+		parentMap["slug"] = parentSlug
 		d.Set("parent", parentMap)
 	}
 
@@ -354,6 +431,23 @@ func resourceRepositoryDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	return nil
+}
+
+var slugForbiddenCharacters *regexp.Regexp = regexp.MustCompile(`[\W-]`)
+
+func computeSlug(repoName string) string {
+	slug := slugForbiddenCharacters.ReplaceAllString(repoName, "-")
+	return strings.ToLower(slug)
+}
+
+func splitFullName(repoFullName string) (string, string, error) {
+	fullNameParts := strings.Split(repoFullName, "/")
+	if len(fullNameParts) < 2 {
+		return "", "", fmt.Errorf("Error parsing repo name (%s)", repoFullName)
+	}
+	owner := fullNameParts[0]
+	repoSlug := strings.Join(fullNameParts[1:], "/")
+	return owner, repoSlug, nil
 }
 
 func expandLinks(l []interface{}) *bitbucket.RepositoryLinks {
