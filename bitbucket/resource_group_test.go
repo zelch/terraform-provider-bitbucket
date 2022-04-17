@@ -50,6 +50,7 @@ func TestAccBitbucketGroup_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "slug"),
 					resource.TestCheckResourceAttr(resourceName, "auto_add", "true"),
 					resource.TestCheckResourceAttr(resourceName, "permission", "read"),
+					resource.TestCheckResourceAttr(resourceName, "email_forwarding_disabled", "true"),
 				),
 			},
 		},
@@ -130,10 +131,11 @@ data "bitbucket_workspace" "test" {
 }
 
 resource "bitbucket_group" "test" {
-  workspace  = data.bitbucket_workspace.test.id
-  name       = %[2]q
-  auto_add   = true
-  permission = "read"
+  workspace                 = data.bitbucket_workspace.test.id
+  name                      = %[2]q
+  auto_add                  = true
+  permission                = "read"
+  email_forwarding_disabled = true
 }
 `, workspace, rName)
 }

@@ -14,10 +14,11 @@ import (
 )
 
 type UserGroup struct {
-	Name       string `json:"name,omitempty"`
-	Slug       string `json:"slug,omitempty"`
-	AutoAdd    bool   `json:"auto_add,omitempty"`
-	Permission string `json:"permission,omitempty"`
+	Name                    string `json:"name,omitempty"`
+	Slug                    string `json:"slug,omitempty"`
+	AutoAdd                 bool   `json:"auto_add,omitempty"`
+	Permission              string `json:"permission,omitempty"`
+	EmailForwardingDisabled bool   `json:"email_forwarding_disabled,omitempty"`
 }
 
 func resourceGroup() *schema.Resource {
@@ -52,6 +53,10 @@ func resourceGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"read", "write", "admin"}, false),
+			},
+			"email_forwarding_disabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 		},
 	}
@@ -129,6 +134,8 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("slug", grp.Slug)
 	d.Set("name", grp.Name)
 	d.Set("auto_add", grp.AutoAdd)
+	d.Set("permission", grp.Permission)
+	d.Set("email_forwarding_disabled", grp.EmailForwardingDisabled)
 
 	return nil
 }
@@ -176,12 +183,16 @@ func expandGroup(d *schema.ResourceData) *UserGroup {
 		Name: d.Get("name").(string),
 	}
 
-	if v, ok := d.GetOkExists("auto_add"); ok {
+	if v, ok := d.GetOk("auto_add"); ok {
 		group.AutoAdd = v.(bool)
 	}
 
 	if v, ok := d.GetOk("permission"); ok && v.(string) != "" {
 		group.Permission = v.(string)
+	}
+
+	if v, ok := d.GetOk("email_forwarding_disabled"); ok {
+		group.EmailForwardingDisabled = v.(bool)
 	}
 
 	return group

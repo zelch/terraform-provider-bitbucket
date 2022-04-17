@@ -3,10 +3,10 @@ layout: "bitbucket"
 page_title: "Bitbucket: bitbucket_group_membership"
 sidebar_current: "docs-bitbucket-resource-group-membership"
 description: |-
-  Provides a Bitbucket Group
+  Provides support for setting Bitbucket Group Membership
 ---
 
-# bitbucket\_group
+# bitbucket\_group\_membership
 
 Provides a Bitbucket group membership resource.
 
