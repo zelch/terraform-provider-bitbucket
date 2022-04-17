@@ -94,10 +94,11 @@ func flattenUserGroups(groups []*UserGroup) []interface{} {
 		}
 
 		group := map[string]interface{}{
-			"name":       btRaw.Name,
-			"permission": btRaw.Permission,
-			"slug":       btRaw.Slug,
-			"auto_add":   btRaw.AutoAdd,
+			"name":                      btRaw.Name,
+			"permission":                btRaw.Permission,
+			"slug":                      btRaw.Slug,
+			"auto_add":                  btRaw.AutoAdd,
+			"email_forwarding_disabled": btRaw.EmailForwardingDisabled,
 		}
 
 		tfList = append(tfList, group)

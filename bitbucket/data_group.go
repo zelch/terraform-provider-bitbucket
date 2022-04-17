@@ -34,6 +34,10 @@ func dataGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"email_forwarding_disabled": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -57,14 +61,14 @@ func dataReadGroup(d *schema.ResourceData, m interface{}) error {
 		return readerr
 	}
 
-	log.Printf("[DEBUG] Groups Response JSON: %v", string(body))
+	log.Printf("[DEBUG] Group Response JSON: %v", string(body))
 
 	decodeerr := json.Unmarshal(body, &grp)
 	if decodeerr != nil {
 		return decodeerr
 	}
 
-	log.Printf("[DEBUG] Groups Response Decoded: %#v", grp)
+	log.Printf("[DEBUG] Group Response Decoded: %#v", grp)
 
 	d.SetId(fmt.Sprintf("%s/%s", workspace, slug))
 	d.Set("workspace", workspace)
@@ -72,6 +76,7 @@ func dataReadGroup(d *schema.ResourceData, m interface{}) error {
 	d.Set("name", grp.Name)
 	d.Set("auto_add", grp.AutoAdd)
 	d.Set("permission", grp.Permission)
+	d.Set("email_forwarding_disabled", grp.EmailForwardingDisabled)
 
 	return nil
 }
