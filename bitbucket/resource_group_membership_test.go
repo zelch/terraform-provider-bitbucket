@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 
@@ -59,7 +60,7 @@ func testAccCheckBitbucketGroupMembershipDestroy(s *terraform.State) error {
 		response, _ := client.Get(fmt.Sprintf("1.0/groups/%s/%s/members",
 			workspace, slug))
 
-		if response.StatusCode == 404 {
+		if response.StatusCode == http.StatusNotFound {
 			continue
 		}
 

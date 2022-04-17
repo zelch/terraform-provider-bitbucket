@@ -14,15 +14,16 @@ Provides a way to fetch data on a user.
 
 ```hcl
 data "bitbucket_user" "reviewer" {
-  username = "gob"
+  account_id = "gob"
 }
 ```
 
 ## Argument Reference
 
-The following arguments are supported:
+The following arguments are supported (At least of of is required):
 
-* `username` - (Required) the username of the user to query.
+* `uuid` - (Optional) The UUID that bitbucket users to connect a user to various objects
+* `account_id` - (Optional) The user's Atlassian account ID.
 
 ## Attributes Reference
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -173,7 +174,7 @@ func resourceHookRead(d *schema.ResourceData, m interface{}) error {
 		url.PathEscape(d.Id()),
 	))
 
-	if hookReq.StatusCode == 404 {
+	if hookReq.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Repository Hook (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil

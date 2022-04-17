@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -70,7 +71,7 @@ func testAccCheckBitbucketPipelineScheduleDestroy(s *terraform.State) error {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if res.StatusCode != 404 {
+		if res.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("Pipeline Schedule still exists")
 		}
 

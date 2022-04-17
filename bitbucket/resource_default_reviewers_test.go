@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -63,7 +64,7 @@ func testAccCheckBitbucketDefaultReviewersDestroy(s *terraform.State) error {
 		}
 		response, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/default-reviewers", rs.Primary.Attributes["owner"], rs.Primary.Attributes["repository"]))
 
-		if response.StatusCode != 404 {
+		if response.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("Defaults Reviewer still exists")
 		}
 	}

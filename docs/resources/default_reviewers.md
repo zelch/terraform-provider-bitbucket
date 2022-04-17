@@ -6,7 +6,7 @@ description: |-
   Provides support for setting up default reviews for bitbucket.
 ---
 
-# bitbucket\_default_reviewers
+# bitbucket\_default\_reviewers
 
 Provides support for setting up default reviewers for your repository. You must however have the UUID of the user available. Since Bitbucket has removed usernames from its APIs the best case is to use the UUID via the data provider.
 
@@ -14,7 +14,7 @@ Provides support for setting up default reviewers for your repository. You must 
 
 ```hcl
 data "bitbucket_user" "reviewer" {
-  username = "gob"
+  account_id = "gob"
 }
 
 resource "bitbucket_default_reviewers" "infrastructure" {
@@ -36,7 +36,7 @@ The following arguments are supported:
 
 ## Import
 
-Default Revieers can be imported using the owner and repo separated by a (`/`) and the string `reviewers` and the end, e.g.,
+Default Reviewers can be imported using the owner and repo separated by a (`/`) and the string `reviewers` and the end, e.g.,
 
 ```sh
 terraform import bitbucket_repository.example myteam/terraform-code/reviewers

@@ -3,6 +3,7 @@ package bitbucket
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/DrFaust92/bitbucket-go-client"
@@ -138,7 +139,7 @@ func resourcePipelineScheduleRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("error reading Pipeline Schedule (%s): %w", d.Id(), err)
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Pipeline Schedule (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil

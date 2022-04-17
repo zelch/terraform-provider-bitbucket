@@ -98,6 +98,8 @@ func dataReadCurrentUser(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("internal server error fetching user")
 	}
 
+	log.Printf("[DEBUG] Current User: %#v", curUser)
+
 	curUserEmails, err := httpClient.Get("2.0/user/emails")
 	if err != nil {
 		return err

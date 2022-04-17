@@ -59,7 +59,7 @@ The following arguments are supported:
 
 ### Link
 
-* `avatar` - (Optional) A avatr link to a resource related to this object. See [Avatar](#avatar) Below.
+* `avatar` - (Optional) An avatar link to a resource related to this object. See [Avatar](#avatar) Below.
 
 #### Avatar
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 
@@ -49,6 +50,7 @@ func TestAccBitbucketGroup_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "slug"),
 					resource.TestCheckResourceAttr(resourceName, "auto_add", "true"),
 					resource.TestCheckResourceAttr(resourceName, "permission", "read"),
+					resource.TestCheckResourceAttr(resourceName, "email_forwarding_disabled", "true"),
 				),
 			},
 		},
@@ -65,7 +67,7 @@ func testAccCheckBitbucketGroupDestroy(s *terraform.State) error {
 		response, err := client.Get(fmt.Sprintf("1.0/groups/%s/%s",
 			rs.Primary.Attributes["workspace"], rs.Primary.Attributes["slug"]))
 
-		if response.StatusCode == 404 {
+		if response.StatusCode == http.StatusNotFound {
 			continue
 		}
 
@@ -129,10 +131,11 @@ data "bitbucket_workspace" "test" {
 }
 
 resource "bitbucket_group" "test" {
-  workspace  = data.bitbucket_workspace.test.id
-  name       = %[2]q
-  auto_add   = true
-  permission = "read"
+  workspace                 = data.bitbucket_workspace.test.id
+  name                      = %[2]q
+  auto_add                  = true
+  permission                = "read"
+  email_forwarding_disabled = true
 }
 `, workspace, rName)
 }

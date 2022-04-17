@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -123,7 +124,7 @@ func resourceRepositoryVariableRead(d *schema.ResourceData, m interface{}) error
 		d.Set("secured", rv.Secured)
 	}
 
-	if rvReq.StatusCode == 404 {
+	if rvReq.StatusCode == http.StatusNotFound {
 		d.SetId("")
 		return nil
 	}

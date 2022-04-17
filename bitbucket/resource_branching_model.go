@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -180,7 +181,7 @@ func resourceBranchingModelsRead(d *schema.ResourceData, m interface{}) error {
 	}
 	branchingModelsReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/%s/branching-model", owner, repo))
 
-	if branchingModelsReq.StatusCode == 404 {
+	if branchingModelsReq.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Branching Model (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil

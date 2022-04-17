@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -128,7 +129,7 @@ func resourceDeploymentRead(d *schema.ResourceData, m interface{}) error {
 		d.Set("stage", Deployment.Stage.Name)
 	}
 
-	if req.StatusCode == 404 {
+	if req.StatusCode == http.StatusNotFound {
 		d.SetId("")
 		return nil
 	}

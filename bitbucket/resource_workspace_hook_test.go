@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"testing"
@@ -81,7 +82,7 @@ func testAccCheckBitbucketWorkspaceHookDestroy(s *terraform.State) error {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if response.StatusCode != 404 {
+		if response.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("Hook still exists")
 		}
 

@@ -3,33 +3,13 @@ package bitbucket
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
-
-// Project is the project data we need to send to create a project on the bitbucket api
-type Project struct {
-	Key                     string        `json:"key,omitempty"`
-	IsPrivate               bool          `json:"is_private,omitempty"`
-	Owner                   string        `json:"owner.username,omitempty"`
-	Description             string        `json:"description,omitempty"`
-	Name                    string        `json:"name,omitempty"`
-	UUID                    string        `json:"uuid,omitempty"`
-	HasPubliclyVisibleRepos bool          `json:"has_publicly_visible_repos,omitempty"`
-	ProjectLinks            *ProjectLinks `json:"links,omitempty"`
-}
-
-type ProjectLinks struct {
-	Avatar Link `json:"avatar,omitempty"`
-}
-
-type Link struct {
-	Href string `json:"href,omitempty"`
-	Name string `json:"name,omitempty"`
-}
 
 func resourceProject() *schema.Resource {
 	return &schema.Resource{
@@ -190,7 +170,7 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return fmt.Errorf("error reading project (%s): %w", d.Id(), err)
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Project (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil

@@ -3,10 +3,10 @@ layout: "bitbucket"
 page_title: "Bitbucket: bitbucket_group_membership"
 sidebar_current: "docs-bitbucket-resource-group-membership"
 description: |-
-  Provides a Bitbucket Group
+  Provides support for setting Bitbucket Group Membership
 ---
 
-# bitbucket\_group
+# bitbucket\_group\_membership
 
 Provides a Bitbucket group membership resource.
 
@@ -43,7 +43,7 @@ The following arguments are supported:
 
 ## Import
 
-Group Memberss can be imported using their `workspace/group-slug/member-uuid` ID, e.g.
+Group Members can be imported using their `workspace/group-slug/member-uuid` ID, e.g.
 
 ```sh
 terraform import bitbucket_group_membership.group my-workspace/group-slug/member-uuid

@@ -19,7 +19,7 @@ resource "bitbucket_pipeline_ssh_key" "test" {
   workspace   = "example"
   repository  = "example"  
   public_key  = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKqP3Cr632C2dNhhgKVcon4ldUSAeKiku2yP9O9/bDtY"
-  priavte_key = "test-key"
+  private_key = "test-key"
 }
 ```
 

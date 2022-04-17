@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -215,7 +216,7 @@ func resourceBranchRestrictionsRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Branch Restrictions (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
