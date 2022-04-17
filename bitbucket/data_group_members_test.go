@@ -26,6 +26,7 @@ func TestAccDataGroupMembers_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(dataSourceName, "workspace", groupResourceName, "workspace"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "slug", groupResourceName, "slug"),
 					resource.TestCheckResourceAttr(dataSourceName, "members.#", "1"),
+					resource.TestCheckTypeSetElemAttrPair(dataSourceName, "members.*", "data.bitbucket_current_user.test", "uuid"),
 				),
 			},
 		},
