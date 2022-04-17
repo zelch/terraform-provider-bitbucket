@@ -20,7 +20,7 @@ data "bitbucket_user" "reviewer" {
 
 ## Argument Reference
 
-The following arguments are supported:
+The following arguments are supported (At least of of is required):
 
 * `uuid` - (Optional) The UUID that bitbucket users to connect a user to various objects
 * `account_id` - (Optional) The user's Atlassian account ID.

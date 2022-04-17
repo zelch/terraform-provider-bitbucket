@@ -36,6 +36,10 @@ The following arguments are supported:
 * `auto_add` - (Optional) Whether to automatically add users the group
 * `permission` - (Optional) One of `read`, `write`, and `admin`.
 
+## Attributes Reference
+
+* `slug` - The groups slug.
+
 ## Import
 
 Groups can be imported using their `workspace/group-slug` ID, e.g.
