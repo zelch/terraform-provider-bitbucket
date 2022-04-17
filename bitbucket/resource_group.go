@@ -129,6 +129,7 @@ func resourceGroupsRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("slug", grp.Slug)
 	d.Set("name", grp.Name)
 	d.Set("auto_add", grp.AutoAdd)
+	d.Set("permission", grp.Permission)
 
 	return nil
 }
