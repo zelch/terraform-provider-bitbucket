@@ -183,8 +183,7 @@ func expandGroup(d *schema.ResourceData) *UserGroup {
 		Name: d.Get("name").(string),
 	}
 
-	//lint:ignore SA1019
-	if v, ok := d.GetOkExists("auto_add"); ok {
+	if v, ok := d.GetOkExists("auto_add"); ok { //lint:ignore SA1019
 		group.AutoAdd = v.(bool)
 	}
 
@@ -192,8 +191,7 @@ func expandGroup(d *schema.ResourceData) *UserGroup {
 		group.Permission = v.(string)
 	}
 
-	//lint:ignore SA1019
-	if v, ok := d.GetOkExists("email_forwarding_disabled"); ok {
+	if v, ok := d.GetOkExists("email_forwarding_disabled"); ok { //lint:ignore SA1019
 		group.EmailForwardingDisabled = v.(bool)
 	}
 
