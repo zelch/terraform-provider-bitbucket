@@ -6,7 +6,7 @@ description: |-
   Provides support for setting up default reviews for bitbucket.
 ---
 
-# bitbucket\_default_reviewers
+# bitbucket\_default\_reviewers
 
 Provides support for setting up default reviewers for your repository. You must however have the UUID of the user available. Since Bitbucket has removed usernames from its APIs the best case is to use the UUID via the data provider.
 
