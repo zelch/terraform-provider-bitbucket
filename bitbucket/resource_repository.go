@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"regexp"
+	"strings"
 	"time"
-
 
 	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/antihax/optional"
@@ -188,27 +187,27 @@ type forkWorkspace struct {
 }
 
 type forkedRepositoryBody struct {
-	Name string `json:"name,omitempty"`
-	Language string `json:"language,omitempty"`
-	IsPrivate bool `json:"is_private,omitempty"`
-	Description string `json:"description,omitempty"`
-	ForkPolicy string `json:"fork_policy,omitempty"`
-	HasWiki bool `json:"has_wiki,omitempty"`
-	HasIssues bool `json:"has_issues,omitempty"`
-	Links *bitbucket.RepositoryLinks `json:"links,omitempty"`
-	Project *bitbucket.Project `json:"project,omitempty"`
-	Workspace *forkWorkspace `json:"workspace,omitempty"`
+	Name        string                     `json:"name,omitempty"`
+	Language    string                     `json:"language,omitempty"`
+	IsPrivate   bool                       `json:"is_private,omitempty"`
+	Description string                     `json:"description,omitempty"`
+	ForkPolicy  string                     `json:"fork_policy,omitempty"`
+	HasWiki     bool                       `json:"has_wiki,omitempty"`
+	HasIssues   bool                       `json:"has_issues,omitempty"`
+	Links       *bitbucket.RepositoryLinks `json:"links,omitempty"`
+	Project     *bitbucket.Project         `json:"project,omitempty"`
+	Workspace   *forkWorkspace             `json:"workspace,omitempty"`
 }
 
-func createForkedRepositoryFromRepository(repo *bitbucket.Repository, targetWorkspaceSlug string) *forkedRepositoryBody{
+func createForkedRepositoryFromRepository(repo *bitbucket.Repository, targetWorkspaceSlug string) *forkedRepositoryBody {
 	forkedRepo := &forkedRepositoryBody{
-		Name: repo.Name,
-		Language: repo.Language,
-		IsPrivate: repo.IsPrivate,
+		Name:        repo.Name,
+		Language:    repo.Language,
+		IsPrivate:   repo.IsPrivate,
 		Description: repo.Description,
-		ForkPolicy: repo.ForkPolicy,
-		HasWiki: repo.HasWiki,
-		HasIssues: repo.HasIssues,
+		ForkPolicy:  repo.ForkPolicy,
+		HasWiki:     repo.HasWiki,
+		HasIssues:   repo.HasIssues,
 	}
 	workspace := &forkWorkspace{
 		Slug: targetWorkspaceSlug,
@@ -310,19 +309,19 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 	pipelinesConfig := &bitbucket.PipelinesConfig{Enabled: pipelinesEnabled}
 
 	retryErr := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-	    _, pipelineResponse, err := pipeApi.UpdateRepositoryPipelineConfig(c.AuthContext, *pipelinesConfig, workspace, repoSlug)
-	    if pipelineResponse.StatusCode == 403 || pipelineResponse.StatusCode == 404 {
-	        return resource.RetryableError(
-	            fmt.Errorf("Permissions error setting Pipelines config, retrying..."),
-	        )
-	    }
-	    if err != nil {
-	        return resource.NonRetryableError(fmt.Errorf("unexpected error enabling pipeline for repository (%s): %w", repoSlug, err),)
-	    }
-	    return nil
+		_, pipelineResponse, err := pipeApi.UpdateRepositoryPipelineConfig(c.AuthContext, *pipelinesConfig, workspace, repoSlug)
+		if pipelineResponse.StatusCode == 403 || pipelineResponse.StatusCode == 404 {
+			return resource.RetryableError(
+				fmt.Errorf("Permissions error setting Pipelines config, retrying..."),
+			)
+		}
+		if err != nil {
+			return resource.NonRetryableError(fmt.Errorf("unexpected error enabling pipeline for repository (%s): %w", repoSlug, err))
+		}
+		return nil
 	})
 	if retryErr != nil {
-	    return retryErr
+		return retryErr
 	}
 
 	return resourceRepositoryRead(d, m)
