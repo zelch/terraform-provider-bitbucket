@@ -1,12 +1,12 @@
 ---
 layout: "bitbucket"
-page_title: "Bitbucket: bitbucket_repository"
-sidebar_current: "docs-bitbucket-resource-repository"
+page_title: "Bitbucket: bitbucket_forked_repository"
+sidebar_current: "docs-bitbucket-resource-forked-repository"
 description: |-
   Provides a Bitbucket Repository
 ---
 
-# bitbucket\_repository
+# bitbucket\_forked\_repository
 
 Provides a Bitbucket repository resource.
 
@@ -16,7 +16,7 @@ private, how to fork the repository and other options.
 ## Example Usage
 
 ```hcl
-resource "bitbucket_repository" "infrastructure" {
+resource "bitbucket_forked_repository" "infrastructure" {
   owner = "myteam"
   name  = "terraform-code"
 }
@@ -26,7 +26,7 @@ If you want to create a repository with a CamelCase name, you should provide
 a separate slug
 
 ```hcl
-resource "bitbucket_repository" "infrastructure" {
+resource "bitbucket_forked_repository" "infrastructure" {
   owner = "myteam"
   name  = "TerraformCode"
   slug  = "terraform-code"
@@ -55,6 +55,7 @@ The following arguments are supported:
 * `description` - (Optional) What the description of the repo is.
 * `pipelines_enabled` - (Optional) Turn on to enable pipelines support.
 * `link` - (Optional) A set of links to a resource related to this object. See [Link](#link) Below.
+* `parent` - (Optional) Create a repository by Forking it's parent See [Parent](#parent) below.
 
 ### Link
 
@@ -63,6 +64,13 @@ The following arguments are supported:
 #### Avatar
 
 * `href` - (Optional) href of the avatar.
+
+### Parent
+
+* `owner` - The owner of the repository we are forking from. Can be you or any other team you
+  have write access to.
+* `slug` - The slug of the parent repository. Found in the URL, typically this is the repository
+  name, all lowercase.
 
 ## Attributes Reference
 
@@ -75,5 +83,5 @@ The following arguments are supported:
 Repositories can be imported using their `owner/name` ID, e.g.
 
 ```sh
-terraform import bitbucket_repository.my-repo my-account/my-repo
+terraform import bitbucket_forked_repository.my-repo my-account/my-repo
 ```
