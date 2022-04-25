@@ -1,6 +1,7 @@
 package bitbucket
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/antihax/optional"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"	
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -15,7 +17,7 @@ import (
 
 func resourceForkedRepository() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceForkedRepositoryCreate,
+		CreateContext: resourceForkedRepositoryCreate,
 		Update: resourceRepositoryUpdate,
 		Read:   resourceForkedRepositoryRead,
 		Delete: resourceRepositoryDelete,
@@ -138,10 +140,10 @@ func resourceForkedRepository() *schema.Resource {
 				ForceNew: true,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					v := val.(map[string]interface{})
-					if _, ok := v["slug"]; ok == false {
+					if _, ok := v["slug"]; !ok {
 						errs = append(errs, fmt.Errorf("A repository 'slug' is required when specifying a parent to fork from."))
 					}
-					if _, ok := v["owner"]; ok == false {
+					if _, ok := v["owner"]; !ok {
 						errs = append(errs, fmt.Errorf("A repository 'owner' is required when specifying a parent to fork from."))
 					}
 					return warns, errs
@@ -192,7 +194,7 @@ func createForkedRepositoryFromRepository(repo *bitbucket.Repository, targetWork
 	return forkedRepo
 }
 
-func resourceForkedRepositoryCreate(d *schema.ResourceData, m interface{}) error {
+func resourceForkedRepositoryCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(Clients).genClient
 	repoApi := c.ApiClient.RepositoriesApi
 	pipeApi := c.ApiClient.PipelinesApi
@@ -211,10 +213,10 @@ func resourceForkedRepositoryCreate(d *schema.ResourceData, m interface{}) error
 	parentWorkspace := parent["owner"].(string)
 	parentRepo, _, err := repoApi.RepositoriesWorkspaceRepoSlugGet(c.AuthContext, parentRepoSlug, parentWorkspace)
 	if err != nil {
-		return fmt.Errorf("error creating repository (%s) forked from (%s): %w", repoSlug, parentRepoSlug, err)
+		return diag.Errorf("error creating repository (%s) forked from (%s): %w", repoSlug, parentRepoSlug, err)
 	}
 	if parentRepo.Scm != repo.Scm {
-		return fmt.Errorf("error creating repository (%s) forked from (%s): Differing version control systems", repoSlug, parentRepoSlug)
+		return diag.Errorf("error creating repository (%s) forked from (%s): Differing version control systems", repoSlug, parentRepoSlug)
 	}
 	requestRepo := createForkedRepositoryFromRepository(repo, workspace)
 	repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugForksPostOpts{
@@ -223,7 +225,7 @@ func resourceForkedRepositoryCreate(d *schema.ResourceData, m interface{}) error
 	_, _, err = repoApi.RepositoriesWorkspaceRepoSlugForksPost(c.AuthContext, parentRepoSlug, parentWorkspace, repoBody)
 	if err != nil {
 		swaggerErr := err.(bitbucket.GenericSwaggerError)
-		return fmt.Errorf("error forking repository (%s) from (%s): %v", repoSlug, parentRepoSlug, string(swaggerErr.Body()))
+		return diag.Errorf("error forking repository (%s) from (%s): %v", repoSlug, parentRepoSlug, string(swaggerErr.Body()))
 	}
 
 	d.SetId(string(fmt.Sprintf("%s/%s", d.Get("owner").(string), repoSlug)))
@@ -231,7 +233,7 @@ func resourceForkedRepositoryCreate(d *schema.ResourceData, m interface{}) error
 	pipelinesEnabled := d.Get("pipelines_enabled").(bool)
 	pipelinesConfig := &bitbucket.PipelinesConfig{Enabled: pipelinesEnabled}
 
-	retryErr := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	retryErr := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		_, pipelineResponse, err := pipeApi.UpdateRepositoryPipelineConfig(c.AuthContext, *pipelinesConfig, workspace, repoSlug)
 		if pipelineResponse.StatusCode == 403 || pipelineResponse.StatusCode == 404 {
 			return resource.RetryableError(
@@ -244,10 +246,10 @@ func resourceForkedRepositoryCreate(d *schema.ResourceData, m interface{}) error
 		return nil
 	})
 	if retryErr != nil {
-		return retryErr
+		return diag.FromErr(retryErr)
 	}
 
-	return resourceRepositoryRead(d, m)
+	return diag.FromErr(resourceRepositoryRead(d, m))
 }
 
 func resourceForkedRepositoryRead(d *schema.ResourceData, m interface{}) error {
