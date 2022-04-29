@@ -8,10 +8,12 @@ description: |-
 
 # bitbucket\_forked\_repository
 
-Provides a Bitbucket repository resource.
+Provides a Bitbucket repository resource that is forked from a parent repo.
 
-This resource allows you manage your repositories such as scm type, if it is
-private, how to fork the repository and other options.
+This resource allows you manage properties of the fork, if it is
+private, how to fork the repository and other options. SCM cannot be overriden,
+as it is inherited from the parent repository. Creation will fail if the parent
+repo has `no_forks` as its fork policy.
 
 ## Example Usage
 
@@ -41,9 +43,9 @@ The following arguments are supported:
   have write access to.
 * `name` - (Required) The name of the repository.
 * `slug` - (Optional) The slug of the repository.
-* `scm` - (Optional) What SCM you want to use. Valid options are `hg` or `git`.
-  Defaults to `git`.
-* `is_private` - (Optional) If this should be private or not. Defaults to `true`.
+* `is_private` - (Optional) If this should be private or not. Defaults to `true`. Note that if
+  the parent repo has `no_public_forks` as its fork policy, the resource may
+  fail to be created.
 * `website` - (Optional) URL of website associated with this repository.
 * `language` - (Optional) What the language of this repository should be.
 * `has_issues` - (Optional) If this should have issues turned on or not.
@@ -55,7 +57,7 @@ The following arguments are supported:
 * `description` - (Optional) What the description of the repo is.
 * `pipelines_enabled` - (Optional) Turn on to enable pipelines support.
 * `link` - (Optional) A set of links to a resource related to this object. See [Link](#link) Below.
-* `parent` - (Optional) Create a repository by Forking it's parent See [Parent](#parent) below.
+* `parent` - The repository to fork from. See [Parent](#parent) below.
 
 ### Link
 
@@ -76,7 +78,8 @@ The following arguments are supported:
 
 * `clone_ssh` - The SSH clone URL.
 * `clone_https` - The HTTPS clone URL.
-* `uuid` - the uuid of the repository resource.
+* `uuid` - The uuid of the repository resource.
+* `scm` - The SCM of the resource. Either `hg` or `git`.
 
 ## Import
 

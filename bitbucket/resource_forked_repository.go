@@ -9,7 +9,7 @@ import (
 
 	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/antihax/optional"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"	
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -18,18 +18,16 @@ import (
 func resourceForkedRepository() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceForkedRepositoryCreate,
-		Update: resourceRepositoryUpdate,
-		Read:   resourceForkedRepositoryRead,
-		Delete: resourceRepositoryDelete,
+		Update:        resourceRepositoryUpdate,
+		ReadContext:   resourceForkedRepositoryRead,
+		Delete:        resourceRepositoryDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Schema: map[string]*schema.Schema{
 			"scm": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "git",
-				ValidateFunc: validation.StringInSlice([]string{"hg", "git"}, false),
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"has_wiki": {
 				Type:     schema.TypeBool,
@@ -95,10 +93,7 @@ func resourceForkedRepository() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if computeSlug(old) == computeSlug(new) {
-						return true
-					}
-					return false
+					return computeSlug(old) == computeSlug(new)
 				},
 			},
 			"uuid": {
@@ -136,7 +131,7 @@ func resourceForkedRepository() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					v := val.(map[string]interface{})
@@ -211,21 +206,14 @@ func resourceForkedRepositoryCreate(ctx context.Context, d *schema.ResourceData,
 	parent := d.Get("parent").(map[string]interface{})
 	parentRepoSlug := parent["slug"].(string)
 	parentWorkspace := parent["owner"].(string)
-	parentRepo, _, err := repoApi.RepositoriesWorkspaceRepoSlugGet(c.AuthContext, parentRepoSlug, parentWorkspace)
-	if err != nil {
-		return diag.Errorf("error creating repository (%s) forked from (%s): %w", repoSlug, parentRepoSlug, err)
-	}
-	if parentRepo.Scm != repo.Scm {
-		return diag.Errorf("error creating repository (%s) forked from (%s): Differing version control systems", repoSlug, parentRepoSlug)
-	}
 	requestRepo := createForkedRepositoryFromRepository(repo, workspace)
 	repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugForksPostOpts{
 		Body: optional.NewInterface(requestRepo),
 	}
-	_, _, err = repoApi.RepositoriesWorkspaceRepoSlugForksPost(c.AuthContext, parentRepoSlug, parentWorkspace, repoBody)
+	_, _, err := repoApi.RepositoriesWorkspaceRepoSlugForksPost(c.AuthContext, parentRepoSlug, parentWorkspace, repoBody)
 	if err != nil {
 		swaggerErr := err.(bitbucket.GenericSwaggerError)
-		return diag.Errorf("error forking repository (%s) from (%s): %v", repoSlug, parentRepoSlug, string(swaggerErr.Body()))
+		return diag.Errorf("error forking repository (%s) from (%s): %s", repoSlug, parentRepoSlug, string(swaggerErr.Body()))
 	}
 
 	d.SetId(string(fmt.Sprintf("%s/%s", d.Get("owner").(string), repoSlug)))
@@ -252,7 +240,7 @@ func resourceForkedRepositoryCreate(ctx context.Context, d *schema.ResourceData,
 	return diag.FromErr(resourceRepositoryRead(d, m))
 }
 
-func resourceForkedRepositoryRead(d *schema.ResourceData, m interface{}) error {
+func resourceForkedRepositoryRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	id := d.Id()
 	if id != "" {
 		idparts := strings.Split(id, "/")
@@ -260,7 +248,7 @@ func resourceForkedRepositoryRead(d *schema.ResourceData, m interface{}) error {
 			d.Set("owner", idparts[0])
 			d.Set("slug", idparts[1])
 		} else {
-			return fmt.Errorf("incorrect ID format, should match `owner/slug`")
+			return diag.Errorf("incorrect ID format, should match `owner/slug`")
 		}
 	}
 
@@ -278,7 +266,7 @@ func resourceForkedRepositoryRead(d *schema.ResourceData, m interface{}) error {
 
 	repoRes, res, err := repoApi.RepositoriesWorkspaceRepoSlugGet(c.AuthContext, repoSlug, workspace)
 	if err != nil {
-		return fmt.Errorf("error reading repository (%s): %w", d.Id(), err)
+		return diag.FromErr(fmt.Errorf("error reading repository (%s): %w", d.Id(), err))
 	}
 
 	if res.StatusCode == http.StatusNotFound {
@@ -304,7 +292,7 @@ func resourceForkedRepositoryRead(d *schema.ResourceData, m interface{}) error {
 		parentMap := make(map[string]string)
 		parentOwner, parentSlug, splitErr := splitFullName(repoRes.Parent.FullName)
 		if splitErr != nil {
-			return fmt.Errorf("error reading forked repository (%s)", d.Get("name").(string))
+			return diag.Errorf("error reading forked repository (%s)", d.Get("name").(string))
 		}
 		parentMap["owner"] = parentOwner
 		parentMap["slug"] = parentSlug
@@ -324,7 +312,7 @@ func resourceForkedRepositoryRead(d *schema.ResourceData, m interface{}) error {
 	pipelinesConfigReq, res, err := pipeApi.GetRepositoryPipelineConfig(c.AuthContext, workspace, repoSlug)
 
 	if err != nil && res.StatusCode != http.StatusNotFound {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if res.StatusCode == 200 {
