@@ -5,26 +5,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccBitbucketRepositoryVariable_basic(t *testing.T) {
 
-	testUser := os.Getenv("BITBUCKET_USERNAME")
-	testAccBitbucketRepositoryVariableConfig := fmt.Sprintf(`
-		resource "bitbucket_repository" "test_repo" {
-			owner = "%s"
-			name = "test-repo-default-reviewers"
-		}
-
-		resource "bitbucket_repository_variable" "testvar" {
-			key = "test"
-			value = "test"
-			repository = "${bitbucket_repository.test_repo.id}"
-			secured = false
-		  }
-	`, testUser)
+	owner := os.Getenv("BITBUCKET_TEAM")
+	rName := acctest.RandomWithPrefix("tf-test")
+	resourceName := "bitbucket_repository_variable.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -32,9 +22,23 @@ func TestAccBitbucketRepositoryVariable_basic(t *testing.T) {
 		CheckDestroy: testAccCheckBitbucketRepositoryVariableDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccBitbucketRepositoryVariableConfig,
+				Config: testAccBitbucketRepositoryVariableConfig(owner, rName, "test-val"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBitbucketRepositoryVariableExists("bitbucket_repository_variable.testvar", "test", "test"),
+					testAccCheckBitbucketRepositoryVariableExists(resourceName),
+					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "id"),
+					resource.TestCheckResourceAttr(resourceName, "key", "test"),
+					resource.TestCheckResourceAttr(resourceName, "value", "test-val"),
+					resource.TestCheckResourceAttr(resourceName, "secured", "false"),
+				),
+			},
+			{
+				Config: testAccBitbucketRepositoryVariableConfig(owner, rName, "test-val-2"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketRepositoryVariableExists(resourceName),
+					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "id"),
+					resource.TestCheckResourceAttr(resourceName, "key", "test"),
+					resource.TestCheckResourceAttr(resourceName, "value", "test-val-2"),
+					resource.TestCheckResourceAttr(resourceName, "secured", "false"),
 				),
 			},
 		},
@@ -42,29 +46,37 @@ func TestAccBitbucketRepositoryVariable_basic(t *testing.T) {
 }
 
 func testAccCheckBitbucketRepositoryVariableDestroy(s *terraform.State) error {
-	_, ok := s.RootModule().Resources["bitbucket_repository_variable.testvar"]
+	_, ok := s.RootModule().Resources["bitbucket_repository_variable.test"]
 	if !ok {
-		return fmt.Errorf("Not found %s", "bitbucket_repository_variable.testvar")
+		return fmt.Errorf("Not found %s", "bitbucket_repository_variable.test")
 	}
 	return nil
 }
 
-func testAccCheckBitbucketRepositoryVariableExists(n, key, value string) resource.TestCheckFunc {
+func testAccCheckBitbucketRepositoryVariableExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
+		_, ok := s.RootModule().Resources[n]
 
 		if !ok {
 			return fmt.Errorf("Not found %s", n)
 		}
 
-		if rs.Primary.Attributes["key"] != key {
-			return fmt.Errorf("Key not set")
-		}
-
-		if rs.Primary.Attributes["value"] != value {
-			return fmt.Errorf("Key not set")
-		}
-
 		return nil
 	}
+}
+
+func testAccBitbucketRepositoryVariableConfig(team, rName, val string) string {
+	return fmt.Sprintf(`
+resource "bitbucket_repository" "test" {
+  owner = %[1]q
+  name  = %[2]q
+}
+
+resource "bitbucket_repository_variable" "test" {
+  key        = "test"
+  value      = %[3]q
+  repository = bitbucket_repository.test.id
+  secured = false
+}
+`, team, rName, val)
 }

@@ -37,8 +37,9 @@ func resourceRepositoryVariable() *schema.Resource {
 				Required: true,
 			},
 			"value": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
 			},
 			"secured": {
 				Type:     schema.TypeBool,
@@ -120,8 +121,13 @@ func resourceRepositoryVariableRead(d *schema.ResourceData, m interface{}) error
 
 		d.Set("uuid", rv.UUID)
 		d.Set("key", rv.Key)
-		d.Set("value", rv.Value)
 		d.Set("secured", rv.Secured)
+
+		if !rv.Secured {
+			d.Set("value", rv.Value)
+		} else {
+			d.Set("value", d.Get("value").(string))
+		}
 	}
 
 	if rvReq.StatusCode == http.StatusNotFound {
