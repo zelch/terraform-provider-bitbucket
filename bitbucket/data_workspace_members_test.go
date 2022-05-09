@@ -17,8 +17,7 @@ func TestAccWorkspaceMembers_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccBitbucketWorkspaceMembersConfig(workspace),
-				Check: resource.ComposeTestCheckFunc(
-				),
+				Check:  resource.ComposeTestCheckFunc(),
 			},
 		},
 	})
