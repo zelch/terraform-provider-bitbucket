@@ -1,24 +1,14 @@
 package bitbucket
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
+	"strings"
 
+	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-// RepositoryVariable structure for handling key info
-type RepositoryVariable struct {
-	Key     string `json:"key"`
-	Value   string `json:"value"`
-	UUID    string `json:"uuid,omitempty"`
-	Secured bool   `json:"secured"`
-}
 
 func resourceRepositoryVariable() *schema.Resource {
 	return &schema.Resource{
@@ -54,8 +44,8 @@ func resourceRepositoryVariable() *schema.Resource {
 	}
 }
 
-func newRepositoryVariableFromResource(d *schema.ResourceData) *RepositoryVariable {
-	dk := &RepositoryVariable{
+func newRepositoryVariableFromResource(d *schema.ResourceData) bitbucket.PipelineVariable {
+	dk := bitbucket.PipelineVariable{
 		Key:     d.Get("key").(string),
 		Value:   d.Get("value").(string),
 		Secured: d.Get("secured").(bool),
@@ -64,109 +54,108 @@ func newRepositoryVariableFromResource(d *schema.ResourceData) *RepositoryVariab
 }
 
 func resourceRepositoryVariableCreate(d *schema.ResourceData, m interface{}) error {
-
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 	rvcr := newRepositoryVariableFromResource(d)
-	bytedata, err := json.Marshal(rvcr)
 
-	if err != nil {
-		return err
-	}
-	req, err := client.Post(fmt.Sprintf("2.0/repositories/%s/pipelines_config/variables/",
-		d.Get("repository").(string),
-	), bytes.NewBuffer(bytedata))
-
+	repo := d.Get("repository").(string)
+	workspace, repoSlug, err := repoVarId(repo)
 	if err != nil {
 		return err
 	}
 
-	var rv RepositoryVariable
+	rvRes, _, err := pipeApi.CreateRepositoryPipelineVariable(c.AuthContext, rvcr, workspace, repoSlug)
 
-	body, readerr := ioutil.ReadAll(req.Body)
-	if readerr != nil {
-		return readerr
+	if err != nil {
+		return fmt.Errorf("error creating Repository Variable (%s): %w", repo, err)
 	}
 
-	decodeerr := json.Unmarshal(body, &rv)
-	if decodeerr != nil {
-		return decodeerr
-	}
-	d.Set("uuid", rv.UUID)
-	d.SetId(rv.Key)
+	d.Set("uuid", rvRes.Uuid)
+	d.SetId(rvRes.Key)
 
 	return resourceRepositoryVariableRead(d, m)
 }
 
 func resourceRepositoryVariableRead(d *schema.ResourceData, m interface{}) error {
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 
-	client := m.(Clients).httpClient
-	rvReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/pipelines_config/variables/%s",
-		d.Get("repository").(string),
-		d.Get("uuid").(string),
-	))
-
-	log.Printf("ID: %s", url.PathEscape(d.Id()))
-
-	if rvReq.StatusCode == 200 {
-		var rv RepositoryVariable
-		body, readerr := ioutil.ReadAll(rvReq.Body)
-		if readerr != nil {
-			return readerr
-		}
-
-		decodeerr := json.Unmarshal(body, &rv)
-		if decodeerr != nil {
-			return decodeerr
-		}
-
-		d.Set("uuid", rv.UUID)
-		d.Set("key", rv.Key)
-		d.Set("secured", rv.Secured)
-
-		if !rv.Secured {
-			d.Set("value", rv.Value)
-		} else {
-			d.Set("value", d.Get("value").(string))
-		}
+	repo := d.Get("repository").(string)
+	workspace, repoSlug, err := repoVarId(repo)
+	if err != nil {
+		return err
 	}
 
-	if rvReq.StatusCode == http.StatusNotFound {
+	rvRes, res, err := pipeApi.GetRepositoryPipelineVariable(c.AuthContext, workspace, repoSlug, d.Get("uuid").(string))
+	if err != nil {
+		return fmt.Errorf("error reading Repository Variable (%s): %w", d.Id(), err)
+	}
+	if res.StatusCode == http.StatusNotFound {
+		log.Printf("[WARN] Repository Variable (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
+	}
+
+	d.Set("uuid", rvRes.Uuid)
+	d.Set("key", rvRes.Key)
+	d.Set("secured", rvRes.Secured)
+
+	if !rvRes.Secured {
+		d.Set("value", rvRes.Value)
+	} else {
+		d.Set("value", d.Get("value").(string))
 	}
 
 	return nil
 }
 
 func resourceRepositoryVariableUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
+
+	repo := d.Get("repository").(string)
+	workspace, repoSlug, err := repoVarId(repo)
+	if err != nil {
+		return err
+	}
+
 	rvcr := newRepositoryVariableFromResource(d)
-	bytedata, err := json.Marshal(rvcr)
+
+	_, _, err = pipeApi.UpdateRepositoryPipelineVariable(c.AuthContext, rvcr, workspace, repoSlug, d.Get("uuid").(string))
+	if err != nil {
+		return fmt.Errorf("error updating Repository Variable (%s): %w", d.Id(), err)
+	}
 
 	if err != nil {
 		return err
-	}
-	req, err := client.Put(fmt.Sprintf("2.0/repositories/%s/pipelines_config/variables/%s",
-		d.Get("repository").(string),
-		d.Get("uuid").(string),
-	), bytes.NewBuffer(bytedata))
-
-	if err != nil {
-		return err
-	}
-
-	if req.StatusCode != 200 {
-		return nil
 	}
 
 	return resourceRepositoryVariableRead(d, m)
 }
 
 func resourceRepositoryVariableDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
-	_, err := client.Delete(fmt.Sprintf(fmt.Sprintf("2.0/repositories/%s/pipelines_config/variables/%s",
-		d.Get("repository").(string),
-		d.Get("uuid").(string),
-	)))
-	return err
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
+
+	repo := d.Get("repository").(string)
+	workspace, repoSlug, err := repoVarId(repo)
+	if err != nil {
+		return err
+	}
+
+	_, err = pipeApi.DeleteRepositoryPipelineVariable(c.AuthContext, workspace, repoSlug, d.Get("uuid").(string))
+	if err != nil {
+		return fmt.Errorf("error deleting Repository Variable (%s): %w", d.Id(), err)
+	}
+
+	return nil
+}
+
+func repoVarId(repo string) (string, string, error) {
+	idparts := strings.Split(repo, "/")
+	if len(idparts) == 2 {
+		return idparts[0], idparts[1], nil
+	} else {
+		return "", "", fmt.Errorf("incorrect ID format, should match `owner/key`")
+	}
 }
