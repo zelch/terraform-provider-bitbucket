@@ -77,6 +77,7 @@ func Provider() *schema.Provider {
 			"bitbucket_user":                      dataUser(),
 			"bitbucket_current_user":              dataCurrentUser(),
 			"bitbucket_workspace":                 dataWorkspace(),
+			"bitbucket_workspace_members":         dataWorkspaceMembers(),
 		},
 	}
 }
