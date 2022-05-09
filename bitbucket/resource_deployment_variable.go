@@ -1,34 +1,15 @@
 package bitbucket
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
+	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-// DeploymentVariable structure for handling key info
-type DeploymentVariable struct {
-	Key     string `json:"key"`
-	Value   string `json:"value"`
-	UUID    string `json:"uuid,omitempty"`
-	Secured bool   `json:"secured"`
-}
-
-// PaginatedReviewers is a paginated list that the bitbucket api returns
-type PaginatedDeploymentVariables struct {
-	Values []DeploymentVariable `json:"values,omitempty"`
-	Page   int                  `json:"page,omitempty"`
-	Size   int                  `json:"size,omitempty"`
-	Next   string               `json:"next,omitempty"`
-}
 
 func resourceDeploymentVariable() *schema.Resource {
 	return &schema.Resource{
@@ -64,8 +45,8 @@ func resourceDeploymentVariable() *schema.Resource {
 	}
 }
 
-func newDeploymentVariableFromResource(d *schema.ResourceData) *DeploymentVariable {
-	dk := &DeploymentVariable{
+func newDeploymentVariableFromResource(d *schema.ResourceData) *bitbucket.DeploymentVariable {
+	dk := &bitbucket.DeploymentVariable{
 		Key:     d.Get("key").(string),
 		Value:   d.Get("value").(string),
 		Secured: d.Get("secured").(bool),
@@ -79,129 +60,127 @@ func parseDeploymentId(str string) (repository string, deployment string) {
 }
 
 func resourceDeploymentVariableCreate(d *schema.ResourceData, m interface{}) error {
-
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 	rvcr := newDeploymentVariableFromResource(d)
-	bytedata, err := json.Marshal(rvcr)
 
-	if err != nil {
-		return err
-	}
 	repository, deployment := parseDeploymentId(d.Get("deployment").(string))
-	req, err := client.Post(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables",
-		repository,
-		deployment,
-	), bytes.NewBuffer(bytedata))
-
+	workspace, repoSlug, err := deployVarId(repository)
 	if err != nil {
 		return err
 	}
 
-	var rv DeploymentVariable
+	rvRes, _, err := pipeApi.CreateDeploymentVariable(c.AuthContext, *rvcr, workspace, repoSlug, deployment)
 
-	body, readerr := ioutil.ReadAll(req.Body)
-	if readerr != nil {
-		return readerr
+	if err != nil {
+		return fmt.Errorf("error creating Deployment Variable (%s): %w", d.Get("deployment").(string), err)
 	}
 
-	decodeerr := json.Unmarshal(body, &rv)
-	if decodeerr != nil {
-		return decodeerr
-	}
-	d.Set("uuid", rv.UUID)
-	d.SetId(rv.UUID)
+	d.Set("uuid", rvRes.Uuid)
+	d.SetId(rvRes.Uuid)
 
 	time.Sleep(5000 * time.Millisecond) // sleep for a while, to allow BitBucket cache to catch up
 	return resourceDeploymentVariableRead(d, m)
 }
 
 func resourceDeploymentVariableRead(d *schema.ResourceData, m interface{}) error {
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 
 	repository, deployment := parseDeploymentId(d.Get("deployment").(string))
-	client := m.(Clients).httpClient
-	rvReq, _ := client.Get(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables?pagelen=100",
-		repository,
-		deployment,
-	))
-
-	log.Printf("ID: %s", url.PathEscape(d.Id()))
-
-	if rvReq.StatusCode == 200 {
-		var prv PaginatedDeploymentVariables
-		body, readerr := ioutil.ReadAll(rvReq.Body)
-		if readerr != nil {
-			return readerr
-		}
-
-		decodeerr := json.Unmarshal(body, &prv)
-		if decodeerr != nil {
-			return decodeerr
-		}
-
-		if prv.Size < 1 {
-			d.SetId("")
-			return nil
-		}
-
-		for _, rv := range prv.Values {
-			if rv.UUID == d.Id() {
-				d.SetId(rv.UUID)
-				d.Set("key", rv.Key)
-				d.Set("secured", rv.Secured)
-
-				if !rv.Secured {
-					d.Set("value", rv.Value)
-				} else {
-					d.Set("value", d.Get("value").(string))
-				}
-
-				return nil
-			}
-		}
-		d.SetId("")
+	workspace, repoSlug, err := deployVarId(repository)
+	if err != nil {
+		return err
 	}
 
-	if rvReq.StatusCode == http.StatusNotFound {
+	rvRes, res, err := pipeApi.GetDeploymentVariables(c.AuthContext, workspace, repoSlug, deployment)
+	if err != nil {
+		return fmt.Errorf("error reading Deployment Variable (%s): %w", d.Id(), err)
+	}
+
+	if res.StatusCode == http.StatusNotFound {
+		log.Printf("[WARN] Deployment Variable (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
+	}
+
+	if rvRes.Size < 1 {
+		log.Printf("[WARN] Deployment Variable (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
+	var deployVar *bitbucket.DeploymentVariable
+
+	for _, rv := range rvRes.Values {
+		if rv.Uuid == d.Id() {
+			deployVar = &rv
+			break
+		}
+	}
+
+	if deployVar == nil {
+		log.Printf("[WARN] Deployment Variable (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
+	d.Set("key", deployVar.Key)
+	d.Set("uuid", deployVar.Uuid)
+	d.Set("secured", deployVar.Secured)
+
+	if !deployVar.Secured {
+		d.Set("value", deployVar.Value)
+	} else {
+		d.Set("value", d.Get("value").(string))
 	}
 
 	return nil
 }
 
 func resourceDeploymentVariableUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(Clients).httpClient
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
 	rvcr := newDeploymentVariableFromResource(d)
-	bytedata, err := json.Marshal(rvcr)
 
-	if err != nil {
-		return err
-	}
 	repository, deployment := parseDeploymentId(d.Get("deployment").(string))
-	req, err := client.Put(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables/%s",
-		repository,
-		deployment,
-		d.Get("uuid").(string),
-	), bytes.NewBuffer(bytedata))
-
+	workspace, repoSlug, err := deployVarId(repository)
 	if err != nil {
 		return err
 	}
 
-	if req.StatusCode != 200 {
-		return nil
+	_, _, err = pipeApi.UpdateDeploymentVariable(c.AuthContext, *rvcr, workspace, repoSlug, deployment, d.Get("uuid").(string))
+
+	if err != nil {
+		return fmt.Errorf("error updating Deployment Variable (%s): %w", d.Get("deployment").(string), err)
 	}
 
 	return resourceDeploymentVariableRead(d, m)
 }
 
 func resourceDeploymentVariableDelete(d *schema.ResourceData, m interface{}) error {
+	c := m.(Clients).genClient
+	pipeApi := c.ApiClient.PipelinesApi
+
 	repository, deployment := parseDeploymentId(d.Get("deployment").(string))
-	client := m.(Clients).httpClient
-	_, err := client.Delete(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables/%s",
-		repository,
-		deployment,
-		d.Get("uuid").(string),
-	))
-	return err
+	workspace, repoSlug, err := deployVarId(repository)
+	if err != nil {
+		return err
+	}
+
+	_, err = pipeApi.DeleteDeploymentVariable(c.AuthContext, workspace, repoSlug, deployment, d.Get("uuid").(string))
+	if err != nil {
+		return fmt.Errorf("error deleting Deployment Variable (%s): %w", d.Id(), err)
+	}
+
+	return nil
+}
+
+func deployVarId(repo string) (string, string, error) {
+	idparts := strings.Split(repo, "/")
+	if len(idparts) == 2 {
+		return idparts[0], idparts[1], nil
+	} else {
+		return "", "", fmt.Errorf("incorrect ID format, should match `owner/key`")
+	}
 }

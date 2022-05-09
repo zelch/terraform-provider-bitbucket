@@ -126,10 +126,6 @@ func resourceRepositoryVariableUpdate(d *schema.ResourceData, m interface{}) err
 		return fmt.Errorf("error updating Repository Variable (%s): %w", d.Id(), err)
 	}
 
-	if err != nil {
-		return err
-	}
-
 	return resourceRepositoryVariableRead(d, m)
 }
 
