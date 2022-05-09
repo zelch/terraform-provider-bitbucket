@@ -3,7 +3,6 @@ package bitbucket
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -67,8 +66,6 @@ func dataReadWorkspaceMembers(d *schema.ResourceData, m interface{}) error {
 	}
 
 	d.SetId(workspace)
-
-	log.Printf("haha %d", len(members))
 	d.Set("workspace", workspace)
 	d.Set("members", members)
 

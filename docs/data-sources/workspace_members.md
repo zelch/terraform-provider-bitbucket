@@ -13,12 +13,8 @@ Provides a way to fetch data on a the members of a workspace.
 ## Example Usage
 
 ```hcl
-data "bitbucket_workspace" "example" {
-  workspace = "gob"
-}
-
 data "bitbucket_workspace_members" "example" {
-  uuid = data.bitbucket_workspace_members.example.uuid
+  workspace = "gob"
 }
 ```
 
@@ -26,9 +22,9 @@ data "bitbucket_workspace_members" "example" {
 
 The following arguments are supported:
 
-* `uuid` - (Required) This is the workspace UUID surrounded by curly-braces
+* `workspace` - (Required) This can either be the workspace ID (slug) or the workspace UUID surrounded by curly-braces.
 
 ## Attributes Reference
 
-* `members` - A set of string containing the member uuids
+* `members` - A set of string containing the member UUIDs.
 * `id` - The workspace's immutable id.
