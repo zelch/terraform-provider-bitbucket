@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -46,9 +47,28 @@ func TestAccBitbucketRepositoryVariable_basic(t *testing.T) {
 }
 
 func testAccCheckBitbucketRepositoryVariableDestroy(s *terraform.State) error {
-	_, ok := s.RootModule().Resources["bitbucket_repository_variable.test"]
-	if !ok {
-		return fmt.Errorf("Not found %s", "bitbucket_repository_variable.test")
+	client := testAccProvider.Meta().(Clients).genClient
+	pipeApi := client.ApiClient.PipelinesApi
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "bitbucket_repository_variable" {
+			continue
+		}
+
+		workspace, repoSlug, err := repoVarId(rs.Primary.Attributes["repository"])
+		if err != nil {
+			return err
+		}
+
+		_, res, err := pipeApi.GetRepositoryPipelineVariable(client.AuthContext, workspace, repoSlug, rs.Primary.Attributes["uuid"])
+
+		if err == nil {
+			return fmt.Errorf("The resource was found should have errored")
+		}
+
+		if res.StatusCode != http.StatusNotFound {
+			return fmt.Errorf("Repository Variable still exists")
+		}
 	}
 	return nil
 }
@@ -76,7 +96,6 @@ resource "bitbucket_repository_variable" "test" {
   key        = "test"
   value      = %[3]q
   repository = bitbucket_repository.test.id
-  secured = false
 }
 `, team, rName, val)
 }

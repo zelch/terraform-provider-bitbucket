@@ -132,8 +132,6 @@ func resourceProjectCreate(d *schema.ResourceData, m interface{}) error {
 
 	owner := d.Get("owner").(string)
 
-	log.Printf("haha %#v", project)
-
 	projRes, _, err := projectApi.WorkspacesWorkspaceProjectsPost(c.AuthContext, *project, owner)
 	if err != nil {
 		return fmt.Errorf("error creating project (%s): %w", projectKey, err)
