@@ -11,22 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// // DeploymentVariable structure for handling key info
-// type DeploymentVariable struct {
-// 	Key     string `json:"key"`
-// 	Value   string `json:"value"`
-// 	UUID    string `json:"uuid,omitempty"`
-// 	Secured bool   `json:"secured"`
-// }
-
-// PaginatedReviewers is a paginated list that the bitbucket api returns
-// type PaginatedDeploymentVariables struct {
-// 	Values []bitbucket.DeploymentVariable `json:"values,omitempty"`
-// 	Page   int                            `json:"page,omitempty"`
-// 	Size   int                            `json:"size,omitempty"`
-// 	Next   string                         `json:"next,omitempty"`
-// }
-
 func resourceDeploymentVariable() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceDeploymentVariableCreate,
