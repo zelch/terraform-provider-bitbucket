@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccWorkspaceMembers_basic(t *testing.T) {
-	dataSourceName := "data.bitbucket_workspace_members.test"
+	// dataSourceName := "data.bitbucket_workspace_members.test"
 	workspace := os.Getenv("BITBUCKET_TEAM")
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -25,12 +25,8 @@ func TestAccWorkspaceMembers_basic(t *testing.T) {
 
 func testAccBitbucketWorkspaceMembersConfig(workspace string) string {
 	return fmt.Sprintf(`
-data "bitbucket_workspace" "test" {
-  workspace = %[1]q
-}
-
 data "bitbucket_workspace_members" "test" {
-  uuid = data.bitbucket_workspace_members.test.uuid
+  workspace = %[1]q
 }
 `, workspace)
 }

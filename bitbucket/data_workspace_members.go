@@ -1,9 +1,11 @@
 package bitbucket
 
 import (
+	"encoding/json"
 	"fmt"
-	"net/http"
+	"log"
 
+	"github.com/DrFaust92/bitbucket-go-client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -12,7 +14,7 @@ func dataWorkspaceMembers() *schema.Resource {
 		Read: dataReadWorkspaceMembers,
 
 		Schema: map[string]*schema.Schema{
-			"uuid": {
+			"workspace": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -26,45 +28,49 @@ func dataWorkspaceMembers() *schema.Resource {
 }
 
 func dataReadWorkspaceMembers(d *schema.ResourceData, m interface{}) error {
-	c := m.(Clients).genClient
+	client := m.(Clients).httpClient
 
-	workspaceApi := c.ApiClient.WorkspacesApi
+	workspace := d.Get("workspace").(string)
+	resourceURL := fmt.Sprintf("2.0/workspaces/%s/members", workspace)
 
-	uuid := d.Get("uuid").(string)
-	workspaceMemberships, res, err := workspaceApi.WorkspacesWorkspaceMembersGet(c.AuthContext, uuid)
+	_, err := client.Get(resourceURL)
 	if err != nil {
 		return err
 	}
 
-	if res.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("workspace not found")
-	}
-
-	if res.StatusCode >= http.StatusInternalServerError {
-		return fmt.Errorf("internal server error fetching workspace")
-	}
-
-	//workspaceReq
-	d.SetId(uuid)
-	d.Set("uuid", uuid)
-
-	var workspaceMembers []string
+	var paginatedMemberships bitbucket.PaginatedWorkspaceMemberships
+	var members []string
 
 	for {
-		for _, member := range workspaceMemberships.Values {
-			if member.User.Uuid == "hello" {
-				workspaceMembers = append(workspaceMembers, member.User.Uuid)
-			}
+		membersRes, err := client.Get(resourceURL)
+		if err != nil {
+			return err
 		}
-		break
-		if workspaceMemberships.Next != "" {
-			break // HERE get next page
+
+		decoder := json.NewDecoder(membersRes.Body)
+		err = decoder.Decode(&paginatedMemberships)
+		if err != nil {
+			return err
+		}
+
+		for _, member := range paginatedMemberships.Values {
+			members = append(members, member.User.Uuid)
+		}
+
+		if paginatedMemberships.Next != "" {
+			nextPage := paginatedMemberships.Page + 1
+			resourceURL = fmt.Sprintf("2.0/workspaces/%s/members?page=%d", workspace, nextPage)
+			paginatedMemberships = bitbucket.PaginatedWorkspaceMemberships{}
 		} else {
 			break
 		}
 	}
-	//d.Set("workspace", workspace)
-	d.Set("members", workspaceMembers)
+
+	d.SetId(workspace)
+
+	log.Printf("haha %d", len(members))
+	d.Set("workspace", workspace)
+	d.Set("members", members)
 
 	return nil
 }
