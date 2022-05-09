@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccWorkspaceMembers_basic(t *testing.T) {
-	// dataSourceName := "data.bitbucket_workspace_members.test"
+	dataSourceName := "data.bitbucket_workspace_members.test"
 	workspace := os.Getenv("BITBUCKET_TEAM")
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -17,7 +17,9 @@ func TestAccWorkspaceMembers_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccBitbucketWorkspaceMembersConfig(workspace),
-				Check:  resource.ComposeTestCheckFunc(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(dataSourceName, "members.#"),
+				),
 			},
 		},
 	})
