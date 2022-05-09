@@ -33,8 +33,8 @@ cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/DrFaust92/bitbucket-go-client v0.0.8 h1:sU4J6d+uXPpRAjGb00upd6ZaGEh4TGQuWhfilANDQoM=
-github.com/DrFaust92/bitbucket-go-client v0.0.8/go.mod h1:3UJtT6PmlsB7MCc1MbegmGlT2waRlIMIHtaQLTcd794=
+github.com/DrFaust92/bitbucket-go-client v0.0.9 h1:pcIPTEC3gdMhs89CgMODBIAKd6MrWHOwnJ/rJ9mBgVg=
+github.com/DrFaust92/bitbucket-go-client v0.0.9/go.mod h1:3UJtT6PmlsB7MCc1MbegmGlT2waRlIMIHtaQLTcd794=
 github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jBhyzoq1bpyYA=
 github.com/Microsoft/go-winio v0.4.16 h1:FtSW/jqD+l4ba5iPBj9CODVtgfYAD8w2wS923g/cFDk=
 github.com/Microsoft/go-winio v0.4.16/go.mod h1:XB6nPKklQyQ7GC9LdcBEcBl8PF76WugXOPRXwdLnMv0=

@@ -22,12 +22,22 @@ func TestAccBitbucketDeploymentVariable_basic(t *testing.T) {
 		CheckDestroy: testAccCheckBitbucketDeploymentVariableDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccBitbucketDeploymentVariableConfig(owner, rName, false),
+				Config: testAccBitbucketDeploymentVariableConfig(owner, rName, "test", false),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBitbucketDeploymentVariableExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "deployment", "bitbucket_deployment.test", "id"),
 					resource.TestCheckResourceAttr(resourceName, "key", "test"),
 					resource.TestCheckResourceAttr(resourceName, "value", "test"),
+					resource.TestCheckResourceAttr(resourceName, "secured", "false"),
+				),
+			},
+			{
+				Config: testAccBitbucketDeploymentVariableConfig(owner, rName, "test-2", false),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketDeploymentVariableExists(resourceName),
+					resource.TestCheckResourceAttrPair(resourceName, "deployment", "bitbucket_deployment.test", "id"),
+					resource.TestCheckResourceAttr(resourceName, "key", "test"),
+					resource.TestCheckResourceAttr(resourceName, "value", "test-2"),
 					resource.TestCheckResourceAttr(resourceName, "secured", "false"),
 				),
 			},
@@ -46,7 +56,27 @@ func TestAccBitbucketDeploymentVariable_secure(t *testing.T) {
 		CheckDestroy: testAccCheckBitbucketDeploymentVariableDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccBitbucketDeploymentVariableConfig(owner, rName, true),
+				Config: testAccBitbucketDeploymentVariableConfig(owner, rName, "test", true),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketDeploymentVariableExists(resourceName),
+					resource.TestCheckResourceAttrPair(resourceName, "deployment", "bitbucket_deployment.test", "id"),
+					resource.TestCheckResourceAttr(resourceName, "key", "test"),
+					resource.TestCheckResourceAttr(resourceName, "value", "test"),
+					resource.TestCheckResourceAttr(resourceName, "secured", "true"),
+				),
+			},
+			{
+				Config: testAccBitbucketDeploymentVariableConfig(owner, rName, "test", false),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBitbucketDeploymentVariableExists(resourceName),
+					resource.TestCheckResourceAttrPair(resourceName, "deployment", "bitbucket_deployment.test", "id"),
+					resource.TestCheckResourceAttr(resourceName, "key", "test"),
+					resource.TestCheckResourceAttr(resourceName, "value", "test"),
+					resource.TestCheckResourceAttr(resourceName, "secured", "false"),
+				),
+			},
+			{
+				Config: testAccBitbucketDeploymentVariableConfig(owner, rName, "test", true),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBitbucketDeploymentVariableExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "deployment", "bitbucket_deployment.test", "id"),
@@ -60,20 +90,26 @@ func TestAccBitbucketDeploymentVariable_secure(t *testing.T) {
 }
 
 func testAccCheckBitbucketDeploymentVariableDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(Clients).httpClient
+	client := testAccProvider.Meta().(Clients).genClient
+	pipeApi := client.ApiClient.PipelinesApi
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "bitbucket_deployment_variable" {
 			continue
 		}
 
 		repository, deployment := parseDeploymentId(rs.Primary.Attributes["deployment"])
-		response, err := client.Get(fmt.Sprintf("2.0/repositories/%s/deployments_config/environments/%s/variables?pagelen=100", repository, deployment))
+		workspace, repoSlug, err := deployVarId(repository)
+		if err != nil {
+			return err
+		}
+
+		_, res, err := pipeApi.GetDeploymentVariables(client.AuthContext, workspace, repoSlug, deployment)
 
 		if err == nil {
 			return fmt.Errorf("The resource was found should have errored")
 		}
 
-		if response.StatusCode != http.StatusNotFound {
+		if res.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("Deployment Variable still exists")
 		}
 	}
@@ -92,7 +128,7 @@ func testAccCheckBitbucketDeploymentVariableExists(n string) resource.TestCheckF
 	}
 }
 
-func testAccBitbucketDeploymentVariableConfig(owner, rName string, secure bool) string {
+func testAccBitbucketDeploymentVariableConfig(owner, rName, val string, secure bool) string {
 	return fmt.Sprintf(`
 resource "bitbucket_repository" "test" {
   owner = %[1]q
@@ -107,9 +143,9 @@ resource "bitbucket_deployment" "test" {
 
 resource "bitbucket_deployment_variable" "test" {
   key        = "test"
-  value      = "test"
+  value      = %[3]q
   deployment = bitbucket_deployment.test.id
-  secured    = %[3]t
+  secured    = %[4]t
 }
-`, owner, rName, secure)
+`, owner, rName, val, secure)
 }
