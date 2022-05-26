@@ -45,7 +45,7 @@ func resourcePipelineSshKnownHost() *schema.Resource {
 						"key_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"Ed25519", "ECDSA", "RSA", "DSA"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"ssh-ed25519", "ecdsa-sha2-nistp256", "ssh-rsa", "ssh-dss"}, false),
 						},
 						"key": {
 							Type:     schema.TypeString,
