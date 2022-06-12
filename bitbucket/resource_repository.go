@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
+	"regexp"
 	"strings"
 
 	"github.com/DrFaust92/bitbucket-go-client"
@@ -22,7 +22,6 @@ func resourceRepository() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"scm": {
 				Type:         schema.TypeString,
@@ -93,6 +92,9 @@ func resourceRepository() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return computeSlug(old) == computeSlug(new)
+				},
 			},
 			"uuid": {
 				Type:     schema.TypeString,
@@ -166,7 +168,7 @@ func resourceRepositoryUpdate(d *schema.ResourceData, m interface{}) error {
 	if repoSlug == "" {
 		repoSlug = d.Get("name").(string)
 	}
-
+	repoSlug = computeSlug(repoSlug)
 	repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPutOpts{
 		Body: optional.NewInterface(repository),
 	}
@@ -201,17 +203,19 @@ func resourceRepositoryCreate(d *schema.ResourceData, m interface{}) error {
 	if repoSlug == "" {
 		repoSlug = d.Get("name").(string)
 	}
+	repoSlug = computeSlug(repoSlug)
+
+	workspace := d.Get("owner").(string)
 
 	repoBody := &bitbucket.RepositoriesApiRepositoriesWorkspaceRepoSlugPostOpts{
 		Body: optional.NewInterface(repo),
 	}
 
-	workspace := d.Get("owner").(string)
 	_, _, err := repoApi.RepositoriesWorkspaceRepoSlugPost(c.AuthContext, repoSlug, workspace, repoBody)
-
 	if err != nil {
 		return fmt.Errorf("error creating repository (%s): %w", repoSlug, err)
 	}
+
 	d.SetId(string(fmt.Sprintf("%s/%s", d.Get("owner").(string), repoSlug)))
 
 	pipelinesEnabled := d.Get("pipelines_enabled").(bool)
@@ -243,6 +247,7 @@ func resourceRepositoryRead(d *schema.ResourceData, m interface{}) error {
 	if repoSlug == "" {
 		repoSlug = d.Get("name").(string)
 	}
+	repoSlug = computeSlug(repoSlug)
 
 	workspace := d.Get("owner").(string)
 	c := m.(Clients).genClient
@@ -318,6 +323,23 @@ func resourceRepositoryDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	return nil
+}
+
+var slugForbiddenCharacters *regexp.Regexp = regexp.MustCompile(`[\W-]`)
+
+func computeSlug(repoName string) string {
+	slug := slugForbiddenCharacters.ReplaceAllString(repoName, "-")
+	return strings.ToLower(slug)
+}
+
+func splitFullName(repoFullName string) (string, string, error) {
+	fullNameParts := strings.Split(repoFullName, "/")
+	if len(fullNameParts) < 2 {
+		return "", "", fmt.Errorf("Error parsing repo name (%s)", repoFullName)
+	}
+	owner := fullNameParts[0]
+	repoSlug := strings.Join(fullNameParts[1:], "/")
+	return owner, repoSlug, nil
 }
 
 func expandLinks(l []interface{}) *bitbucket.RepositoryLinks {

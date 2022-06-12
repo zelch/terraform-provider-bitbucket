@@ -53,6 +53,7 @@ func Provider() *schema.Provider {
 			"bitbucket_group_membership":        resourceGroupMembership(),
 			"bitbucket_default_reviewers":       resourceDefaultReviewers(),
 			"bitbucket_repository":              resourceRepository(),
+			"bitbucket_forked_repository":       resourceForkedRepository(),
 			"bitbucket_repository_variable":     resourceRepositoryVariable(),
 			"bitbucket_project":                 resourceProject(),
 			"bitbucket_deploy_key":              resourceDeployKey(),
