@@ -11,7 +11,7 @@ description: |-
 Provides a Bitbucket repository resource that is forked from a parent repo.
 
 This resource allows you manage properties of the fork, if it is
-private, how to fork the repository and other options. SCM cannot be overriden,
+private, how to fork the repository and other options. SCM cannot be overridden,
 as it is inherited from the parent repository. Creation will fail if the parent
 repo has `no_forks` as its fork policy.
 
