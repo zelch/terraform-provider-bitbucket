@@ -40,7 +40,7 @@ func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "hostname", "example.com"),
 					resource.TestCheckResourceAttr(resourceName, "public_key.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "public_key.0.key_type", "RSA"),
+					resource.TestCheckResourceAttr(resourceName, "public_key.0.key_type", "ssh-rsa"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_key.0.md5_fingerprint"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_key.0.sha256_fingerprint"),
 				),
@@ -57,7 +57,7 @@ func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "hostname", "example2.com"),
 					resource.TestCheckResourceAttr(resourceName, "public_key.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "public_key.0.key_type", "RSA"),
+					resource.TestCheckResourceAttr(resourceName, "public_key.0.key_type", "ssh-rsa"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_key.0.md5_fingerprint"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_key.0.sha256_fingerprint"),
 				),
@@ -120,7 +120,7 @@ resource "bitbucket_pipeline_ssh_known_host" "test" {
   hostname   = %[4]q
 
   public_key {
-    key_type = "RSA" 
+    key_type = "ssh-rsa" 
     key      = base64encode(%[3]q)
   }
 }

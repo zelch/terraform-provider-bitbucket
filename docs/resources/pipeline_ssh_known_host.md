@@ -21,7 +21,7 @@ resource "bitbucket_pipeline_ssh_known_host" "test" {
   hostname   = "example.com"
 
   public_key {
-    key_type = "Ed25519" 
+    key_type = "ssh-ed25519" 
     key      = base64encode("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKqP3Cr632C2dNhhgKVcon4ldUSAeKiku2yP9O9/bDtY")
   }
 }
@@ -38,7 +38,7 @@ The following arguments are supported:
 
 ### Public Key
 
-* `key_type` - The type of the public key. Valid values are `Ed25519`, `ECDSA`, `RSA`, and `DSA`.
+* `key_type` - The type of the public key. Valid values are `ssh-ed25519`, `ecdsa-sha2-nistp256`, `ssh-rsa`, and `ssh-dss`.
 * `key` - The base64 encoded public key.
 
 ## Attributes Reference
