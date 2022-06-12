@@ -32,6 +32,11 @@ resource "bitbucket_forked_repository" "infrastructure" {
   owner = "myteam"
   name  = "TerraformCode"
   slug  = "terraform-code"
+  
+  parent = {
+    owner = bitbucket_repository.test.owner
+    slug  = bitbucket_repository.test.slug
+  }
 }
 ```
 
