@@ -31,18 +31,4 @@ jobs:
         with:
           config: '.markdownlint.yml'
           args: 'docs'
-  misspell:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version-file: .go-version
-      - uses: actions/cache@v3
-        continue-on-error: true
-        timeout-minutes: 2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
-      - run: go install github.com/client9/misspell/cmd/misspell
-      - run: misspell -error -source text docs/
+
