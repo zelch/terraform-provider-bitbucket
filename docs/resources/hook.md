@@ -12,6 +12,8 @@ Provides a Bitbucket hook resource.
 
 This allows you to manage your webhooks on a repository.
 
+OAuth2 Scopes: `webhook`
+
 ## Example Usage
 
 ```hcl

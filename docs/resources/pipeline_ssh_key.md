@@ -12,6 +12,8 @@ Provides a Bitbucket Pipeline Ssh Key resource.
 
 This allows you to manage your Pipeline Ssh Keys for a repository.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl

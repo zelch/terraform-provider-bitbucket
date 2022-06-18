@@ -11,6 +11,8 @@ description: |-
 
 This resource allows you to configure deployment variables.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl

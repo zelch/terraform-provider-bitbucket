@@ -10,6 +10,8 @@ description: |-
 
 Provides a way to fetch data on a workspace.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl

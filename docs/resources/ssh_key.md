@@ -12,6 +12,8 @@ Provides a Bitbucket SSH Key resource.
 
 This allows you to manage your SSH Keys for a user.
 
+OAuth2 Scopes: `account` and `account:write`
+
 ## Example Usage
 
 ```hcl
