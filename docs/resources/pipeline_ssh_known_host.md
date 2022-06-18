@@ -18,11 +18,11 @@ This allows you to manage your Pipeline Ssh Known Hosts for a repository.
 resource "bitbucket_pipeline_ssh_known_host" "test" {
   workspace  = "example"
   repository = bitbucket_repository.test.name
-  hostname   = "example.com"
+  hostname   = "[example.com]:22"
 
   public_key {
     key_type = "ssh-ed25519" 
-    key      = base64encode("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKqP3Cr632C2dNhhgKVcon4ldUSAeKiku2yP9O9/bDtY")
+    key      = "AAAAC3NzaC1lZDI1NTE5AAAAIKqP3Cr632C2dNhhgKVcon4ldUSAeKiku2yP9O9/bDtY"
   }
 }
 ```
@@ -39,7 +39,7 @@ The following arguments are supported:
 ### Public Key
 
 * `key_type` - The type of the public key. Valid values are `ssh-ed25519`, `ecdsa-sha2-nistp256`, `ssh-rsa`, and `ssh-dss`.
-* `key` - The base64 encoded public key.
+* `key` - The plain public key.
 
 ## Attributes Reference
 

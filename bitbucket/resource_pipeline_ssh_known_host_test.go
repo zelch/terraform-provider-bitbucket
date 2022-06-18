@@ -16,13 +16,12 @@ func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
 
 	rName := acctest.RandomWithPrefix("tf-test")
 	owner := os.Getenv("BITBUCKET_TEAM")
-	userEmail := os.Getenv("BITBUCKET_USERNAME")
-	publicKey, _, err := RandSSHKeyPairSize(2048, userEmail)
+	publicKey, err := RandPlainSSHKeyPairSize(2048)
 	if err != nil {
 		t.Fatalf("error generating random SSH key: %s", err)
 	}
 
-	publicKey2, _, err := RandSSHKeyPairSize(2048, userEmail)
+	publicKey2, err := RandPlainSSHKeyPairSize(2048)
 	if err != nil {
 		t.Fatalf("error generating random SSH key: %s", err)
 	}
@@ -33,12 +32,12 @@ func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
 		CheckDestroy: testAccCheckBitbucketPipelineSshKnownHostDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccBitbucketPipelineSshKnownHostConfig(owner, rName, publicKey, "example.com"),
+				Config: testAccBitbucketPipelineSshKnownHostConfig(owner, rName, publicKey, "[example.com]"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBitbucketPipelineSshKnownHostExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "workspace", "bitbucket_repository.test", "owner"),
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
-					resource.TestCheckResourceAttr(resourceName, "hostname", "example.com"),
+					resource.TestCheckResourceAttr(resourceName, "hostname", "[example.com]"),
 					resource.TestCheckResourceAttr(resourceName, "public_key.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "public_key.0.key_type", "ssh-rsa"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_key.0.md5_fingerprint"),
@@ -51,11 +50,11 @@ func TestAccBitbucketPipelineSshKnownHost_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccBitbucketPipelineSshKnownHostConfig(owner, rName, publicKey2, "example2.com"),
+				Config: testAccBitbucketPipelineSshKnownHostConfig(owner, rName, publicKey2, "[example2.com]:22"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(resourceName, "workspace", "bitbucket_repository.test", "owner"),
 					resource.TestCheckResourceAttrPair(resourceName, "repository", "bitbucket_repository.test", "name"),
-					resource.TestCheckResourceAttr(resourceName, "hostname", "example2.com"),
+					resource.TestCheckResourceAttr(resourceName, "hostname", "[example2.com]:22"),
 					resource.TestCheckResourceAttr(resourceName, "public_key.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "public_key.0.key_type", "ssh-rsa"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_key.0.md5_fingerprint"),
@@ -121,7 +120,7 @@ resource "bitbucket_pipeline_ssh_known_host" "test" {
 
   public_key {
     key_type = "ssh-rsa" 
-    key      = base64encode(%[3]q)
+    key      = %[3]q
   }
 }
 `, workspace, rName, pubKey, host)

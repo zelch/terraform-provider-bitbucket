@@ -31,6 +31,15 @@ func RandSSHKeyPairSize(keySize int, comment string) (string, string, error) {
 	return fmt.Sprintf("%s %s", keyMaterial, comment), privateKeyPEM, nil
 }
 
+func RandPlainSSHKeyPairSize(keySize int) (string, error) {
+	privateKey, _, err := RandSSHKeyPairSize(keySize, "")
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Split(privateKey, " ")[1], nil
+}
+
 func genPrivateKey(keySize int) (*rsa.PrivateKey, string, error) {
 	privateKey, err := rsa.GenerateKey(crand.Reader, keySize)
 	if err != nil {
