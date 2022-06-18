@@ -12,6 +12,8 @@ Provides a Bitbucket branching model resource.
 
 This allows you for setting up branching models for your repository.
 
+OAuth2 Scopes: `repository:admin`
+
 ## Example Usage
 
 ```hcl

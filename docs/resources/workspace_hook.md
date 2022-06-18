@@ -12,6 +12,8 @@ Provides a Bitbucket workspace hook resource.
 
 This allows you to manage your webhooks on a workspace.
 
+OAuth2 Scopes: `webhook`
+
 ## Example Usage
 
 ```hcl

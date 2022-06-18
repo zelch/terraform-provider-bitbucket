@@ -49,3 +49,7 @@ The following arguments are supported in the `provider` block:
 
 * `oauth_token` - (Optional) Your password used to connect to bitbucket. You can
 also set this via the environment variable. `BITBUCKET_OAUTH_TOKEN`
+
+## OAuth2 Scopes
+
+To interacte with the Bitbucket API, an [App Password](https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) is required. App passwords are limited in scope, each API requires certain scopse to interact with, each resource doc will specifiy what are the scopes required to use that resource. See [Docs](https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/) for more inforamtion on scopes.

@@ -11,6 +11,8 @@ description: |-
 
 This resource allows you to manage your projects in your bitbucket team.
 
+OAuth2 Scopes: `project` and `project:admin`
+
 ## Example Usage
 
 ```hcl

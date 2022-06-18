@@ -12,6 +12,8 @@ Provides a Bitbucket branch restriction resource.
 
 This allows you for setting up branch restrictions for your repository.
 
+OAuth2 Scopes: `repository:admin`
+
 ## Example Usage
 
 ```hcl

@@ -11,6 +11,8 @@ description: |-
 
 This resource allows you to setup pipelines deployment environments.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl

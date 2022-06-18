@@ -12,6 +12,8 @@ Provides a Bitbucket Pipeline Schedule resource.
 
 This allows you to manage your Pipeline Schedules for a repository.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl

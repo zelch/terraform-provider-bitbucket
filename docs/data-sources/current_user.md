@@ -10,6 +10,8 @@ description: |-
 
 Provides a way to fetch data of the current user.
 
+OAuth2 Scopes: `account`
+
 ## Example Usage
 
 ```hcl

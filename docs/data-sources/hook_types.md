@@ -10,6 +10,8 @@ description: |-
 
 Provides a way to fetch data of hook types.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl

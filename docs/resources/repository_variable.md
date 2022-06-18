@@ -11,6 +11,8 @@ description: |-
 
 This resource allows you to setup pipelines variables to manage your builds with. Once you have enabled pipelines on your repository you can then further setup variables here to use.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl

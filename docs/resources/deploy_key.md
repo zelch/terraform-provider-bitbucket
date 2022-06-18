@@ -12,6 +12,8 @@ Provides a Bitbucket Deploy Key resource.
 
 This allows you to manage your Deploy Keys for a repository.
 
+OAuth2 Scopes: `repository` and `repository:admin`
+
 ## Example Usage
 
 ```hcl

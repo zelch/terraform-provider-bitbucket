@@ -12,6 +12,8 @@ Provides a Bitbucket Pipeline Ssh Known Host resource.
 
 This allows you to manage your Pipeline Ssh Known Hosts for a repository.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl

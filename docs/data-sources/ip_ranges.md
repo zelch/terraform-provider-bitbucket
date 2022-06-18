@@ -10,6 +10,8 @@ description: |-
 
 Provides a way to fetch IP Ranges for whitelisting.
 
+OAuth2 Scopes: `none`
+
 ## Example Usage
 
 ```hcl
