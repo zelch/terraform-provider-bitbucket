@@ -63,7 +63,7 @@ func resourceDefaultReviewersCreate(d *schema.ResourceData, m interface{}) error
 	workspace := d.Get("owner").(string)
 	for _, user := range d.Get("reviewers").(*schema.Set).List() {
 		userName := user.(string)
-		reviewerResp, err := prApi.RepositoriesWorkspaceRepoSlugDefaultReviewersTargetUsernamePut(c.AuthContext, repo, userName, workspace)
+		_, reviewerResp, err := prApi.RepositoriesWorkspaceRepoSlugDefaultReviewersTargetUsernamePut(c.AuthContext, repo, userName, workspace)
 
 		if err != nil {
 			return err
@@ -148,7 +148,7 @@ func resourceDefaultReviewersUpdate(d *schema.ResourceData, m interface{}) error
 
 	for _, user := range add.List() {
 		userName := user.(string)
-		reviewerResp, err := prApi.RepositoriesWorkspaceRepoSlugDefaultReviewersTargetUsernamePut(c.AuthContext, repo, userName, workspace)
+		_, reviewerResp, err := prApi.RepositoriesWorkspaceRepoSlugDefaultReviewersTargetUsernamePut(c.AuthContext, repo, userName, workspace)
 
 		if err != nil {
 			return err

@@ -27,23 +27,6 @@ func dataUser() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringIsNotEmpty,
 			},
-			"nickname": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"account_id": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringIsNotEmpty,
-			},
-			"account_status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"is_staff": {
-				Type:     schema.TypeBool,
-				Computed: true,
-			},
 		},
 	}
 }
@@ -52,10 +35,6 @@ func dataReadUser(d *schema.ResourceData, m interface{}) error {
 	c := m.(Clients).genClient
 	usersApi := c.ApiClient.UsersApi
 	var selectedUser string
-
-	if v, ok := d.GetOk("account_id"); ok && v.(string) != "" {
-		selectedUser = v.(string)
-	}
 
 	if v, ok := d.GetOk("uuid"); ok && v.(string) != "" {
 		selectedUser = v.(string)
@@ -78,12 +57,8 @@ func dataReadUser(d *schema.ResourceData, m interface{}) error {
 
 	d.SetId(user.Uuid)
 	d.Set("uuid", user.Uuid)
-	d.Set("nickname", user.Nickname)
 	d.Set("username", user.Username)
 	d.Set("display_name", user.DisplayName)
-	d.Set("account_id", user.AccountId)
-	d.Set("account_status", user.AccountStatus)
-	d.Set("is_staff", user.IsStaff)
 
 	return nil
 }

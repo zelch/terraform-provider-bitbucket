@@ -27,10 +27,6 @@ There are no arguments available for this data source.
 * `username` - The Username.
 * `uuid` - the uuid that bitbucket users to connect a user to various objects
 * `display_name` - the display name that the user wants to use for GDPR
-* `nickname` - Account name defined by the owner. Note that "nickname" cannot be used in place of "username" in URLs and queries, as "nickname" is not guaranteed to be unique.
-* `account_status` - The status of the account.
-* `account_id` - The user's Atlassian account ID.
-* `is_staff` - is staff user.
 * `email` - A Set of emails associated to current user. See [Email](#email) below.
 
 ### Email
