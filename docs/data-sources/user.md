@@ -23,13 +23,8 @@ data "bitbucket_user" "reviewer" {
 The following arguments are supported (At least of of is required):
 
 * `uuid` - (Optional) The UUID that bitbucket users to connect a user to various objects
-* `account_id` - (Optional) The user's Atlassian account ID.
 
 ## Attributes Reference
 
 * `uuid` - the uuid that bitbucket users to connect a user to various objects
 * `display_name` - the display name that the user wants to use for GDPR
-* `nickname` - Account name defined by the owner. Note that "nickname" cannot be used in place of "username" in URLs and queries, as "nickname" is not guaranteed to be unique.
-* `account_status` - The status of the account.
-* `account_id` - The user's Atlassian account ID.
-* `is_staff` - is staff user.

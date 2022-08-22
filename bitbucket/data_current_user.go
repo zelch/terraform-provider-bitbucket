@@ -40,22 +40,6 @@ func dataCurrentUser() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"nickname": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"account_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"account_status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"is_staff": {
-				Type:     schema.TypeBool,
-				Computed: true,
-			},
 			"email": {
 				Type:     schema.TypeSet,
 				Computed: true,
@@ -124,11 +108,7 @@ func dataReadCurrentUser(d *schema.ResourceData, m interface{}) error {
 	d.SetId(curUser.Uuid)
 	d.Set("uuid", curUser.Uuid)
 	d.Set("username", curUser.Username)
-	d.Set("nickname", curUser.Nickname)
 	d.Set("display_name", curUser.DisplayName)
-	d.Set("account_id", curUser.AccountId)
-	d.Set("account_status", curUser.AccountStatus)
-	d.Set("is_staff", curUser.IsStaff)
 	d.Set("email", flattenUserEmails(emails.Values))
 
 	return nil
