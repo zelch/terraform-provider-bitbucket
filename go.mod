@@ -1,5 +1,7 @@
 module github.com/terraform-providers/terraform-provider-bitbucket
 
+go 1.18
+
 require (
 	github.com/DrFaust92/bitbucket-go-client v0.1.0
 	github.com/antihax/optional v1.0.0
