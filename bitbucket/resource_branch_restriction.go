@@ -212,14 +212,18 @@ func resourceBranchRestrictionsRead(ctx context.Context, d *schema.ResourceData,
 	brRes, res, err := brApi.RepositoriesWorkspaceRepoSlugBranchRestrictionsIdGet(c.AuthContext, url.PathEscape(d.Id()),
 		d.Get("repository").(string), d.Get("owner").(string))
 
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
+	// Recent versions of bitbucket-go-client now return an error on
+	// http.StatusNotFound, so this check must occur first.
+	// It would be helpful if bitbucket-go-client had errors we could check
+	// with err.Is, but that is not currently the case.
 	if res.StatusCode == http.StatusNotFound {
 		log.Printf("[WARN] Branch Restrictions (%s) not found, removing from state", d.Id())
 		d.SetId("")
 		return nil
+	}
+
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	d.SetId(string(fmt.Sprintf("%v", brRes.Id)))
